@@ -783,35 +783,26 @@ function parseOutlookRows(rows) {
     const all = [block.location, ...block.body].join(' ');
     const al  = all.toLowerCase();
 
-    // For weekly/biweekly recurrences the actual meeting's day-of-week
-    // is ground truth — text patterns are used only to detect the
-    // recurrence *type*. (Some Outlook exports leak adjacent meeting
-    // text into a block's body, so trusting parsed weekday names can
-    // produce off-by-N-day extrapolations.)
-    const trueDow = startDt.getDay();
-
     // Structured patterns (most reliable — Outlook puts these in Location of continuation rows)
     for (const part of [block.location, ...block.body]) {
       const p = part.trim(); const pl = p.toLowerCase();
-      // "the fourth Tuesday of every 1 month(s)..." — keep parsed dow
-      // here because monthly-nth needs to know *which* weekday in case
-      // startDt isn't a recurrence-aligned occurrence (rare, but possible).
+      // "the fourth Tuesday of every 1 month(s)..."
       let m = pl.match(/the (first|second|third|fourth|last) (monday|tuesday|wednesday|thursday|friday|saturday|sunday) of every \d+ month/);
       if (m) return { type:'monthly-nth', dow:DAY_IDX[m[2]], nth:ORD[m[1]] };
-      // "Occurs on X every other week..."
+      // "Occurs on Tuesday every other week..."
       m = pl.match(/occurs on (monday|tuesday|wednesday|thursday|friday|saturday|sunday) every other week/);
-      if (m) return { type:'biweekly', dow:trueDow };
-      // "every X from..." or "every other X from..."
+      if (m) return { type:'biweekly', dow:DAY_IDX[m[1]] };
+      // "every Wednesday from..." or "every other Wednesday from..."
       m = pl.match(/^every (other )?(monday|tuesday|wednesday|thursday|friday|saturday|sunday) from/);
-      if (m) return { type: m[1] ? 'biweekly' : 'weekly', dow:trueDow };
+      if (m) return { type: m[1] ? 'biweekly' : 'weekly', dow:DAY_IDX[m[2]] };
       // "Monthly" standalone
       if (/^monthly$/i.test(p)) return { type:'monthly-dom', dow:null };
       // "Weekly" standalone
-      if (/^weekly$/i.test(p)) return { type:'weekly', dow:trueDow };
+      if (/^weekly$/i.test(p)) return { type:'weekly', dow:startDt.getDay() };
     }
     // Free text fallbacks
-    if (/every (other|2) week|bi.?weekly|biweekly/i.test(al)) return { type:'biweekly', dow:trueDow };
-    if (/every week|\bweekly\b/i.test(al) && !/bi.?weekly/i.test(al)) return { type:'weekly', dow:trueDow };
+    if (/every (other|2) week|bi.?weekly|biweekly/i.test(al)) return { type:'biweekly', dow:startDt.getDay() };
+    if (/every week|\bweekly\b/i.test(al) && !/bi.?weekly/i.test(al)) return { type:'weekly', dow:startDt.getDay() };
     if (/every month|\bmonthly\b/i.test(al)) return { type:'monthly-dom', dow:null };
     return null;
   }
@@ -853,9 +844,7 @@ function parseOutlookRows(rows) {
   // ── Process each block ────────────────────────────────────────────────────────
   blocks.forEach(block => {
     const subject = block.subject;
-    // Skip cancellations in any common Outlook format:
-    // "Canceled: ..", "Cancelled: ..", "[Canceled] ..", "Canceled - .."
-    if (!subject || /^\s*\[?cancell?ed\b/i.test(subject)) return;
+    if (!subject || /^canceled:/i.test(subject)) return;
 
     const startDt = parseOLDate(block.startStr);
     const endDt   = parseOLDate(block.endStr);
@@ -1064,8 +1053,8 @@ function showExtracted() {
 
           <!-- Include checkbox -->
           <label style="display:flex; flex-direction:column; align-items:center; gap:5px; font-size:11px; font-weight:500; cursor:pointer; color:var(--text2); flex-shrink:0;">
-            <input type="checkbox" checked id="inc-${m._idx}" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;">
-            Include
+            <input type="checkbox" ${m.isGuessed ? '' : 'checked'} id="inc-${m._idx}" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;">
+            ${m.isGuessed ? `<span style="color:var(--danger); font-size:10px;">Review</span>` : 'Include'}
           </label>
         </div>
       </div>`;
