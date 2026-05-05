@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SD&S Quarterly Engagement Tracker</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -56,28 +57,15 @@ body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color
 .stat-lbl { font-size: 11px; font-weight: 500; color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 6px; }
 .c-accent { color: var(--accent); } .c-success { color: var(--success); } .c-warning { color: var(--yellow); }
 
-/* Single paste zone */
-.paste-zone {
-  border: 2px dashed var(--border2); border-radius: 12px; min-height: 220px;
-  background: var(--surface2); display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 14px;
-  transition: all 0.2s; cursor: pointer; position: relative; outline: none;
-  margin-bottom: 16px;
+/* Drop zone for Excel files */
+.drop-zone {
+  border: 2px dashed var(--border2); border-radius: 12px;
+  background: var(--surface2); transition: all 0.2s; cursor: pointer;
+  position: relative; padding: 40px 20px; text-align: center;
 }
-.paste-zone:focus, .paste-zone.dragover { border-color: var(--accent); background: rgba(88,166,255,0.05); box-shadow: 0 0 0 3px rgba(88,166,255,0.1); }
-.paste-zone.has-image { min-height: auto; border-style: solid; border-color: var(--success); cursor: default; padding: 0; overflow: hidden; }
-.paste-zone.has-image .pz-placeholder { display: none; }
-.paste-zone img { width: 100%; display: block; border-radius: 10px; max-height: 500px; object-fit: contain; }
-.pz-placeholder { display: flex; flex-direction: column; align-items: center; gap: 10px; pointer-events: none; }
-.pz-icon { font-size: 44px; }
-.pz-main { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 700; color: var(--text); }
-.pz-sub { font-size: 13px; color: var(--text2); text-align: center; line-height: 1.6; max-width: 340px; }
-.pz-kbd { display: inline-flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border2); border-radius: 8px; padding: 8px 18px; font-size: 15px; font-weight: 700; color: var(--accent); margin-top: 4px; font-family: 'Inter', monospace; }
-.pz-or { font-size: 12px; color: var(--text3); }
-.pz-clear { position: absolute; top: 10px; right: 10px; background: rgba(13,17,23,0.85); color: var(--danger); border: 1px solid var(--border2); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 12px; font-family: 'Inter', sans-serif; display: none; z-index: 3; }
-.paste-zone.has-image .pz-clear { display: block; }
-.pz-loaded { position: absolute; top: 10px; left: 10px; background: var(--success); color: #0d1117; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px; display: none; z-index: 2; }
-.paste-zone.has-image .pz-loaded { display: block; }
+.drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: rgba(88,166,255,0.05); }
+.dz-placeholder, .dz-loaded { pointer-events: none; }
+.dz-loaded { display: none; }
 
 /* Yellow note */
 .yellow-note { background: rgba(210,153,34,0.1); border: 1px solid rgba(210,153,34,0.3); border-radius: 8px; padding: 11px 14px; font-size: 13px; color: var(--yellow); margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
@@ -152,11 +140,11 @@ textarea.form-input { resize: vertical; min-height: 80px; line-height: 1.5; }
 .filter-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
 
 /* Report */
-.report-section { margin-bottom: 24px; }
-.report-label { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
-.report-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.report-table th { text-align: left; padding: 9px 12px; font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; border-bottom: 1px solid var(--border); }
-.report-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: top; }
+.report-section { margin-bottom: 28px; }
+.report-label { font-size: 12px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+.report-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.report-table th { text-align: left; padding: 10px 14px; font-size: 12px; font-weight: 700; color: var(--text2); text-transform: uppercase; border-bottom: 1px solid var(--border); }
+.report-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: top; font-size: 14px; }
 .report-table tr:last-child td { border-bottom: none; }
 .report-table td:first-child { color: var(--text); font-weight: 500; }
 
@@ -220,6 +208,7 @@ select.wk { background: var(--surface2); border: 1px solid var(--border2); borde
       <div class="sidebar-stat">Complete <span id="sb-complete">0</span></div>
       <div class="sidebar-stat">Pending <span id="sb-pending">0</span></div>
       <div class="sidebar-stat">Hours logged <span id="sb-hours">0</span></div>
+      <div id="sb-sync" style="font-size:10px; color:var(--text3); margin-top:8px; padding-top:8px; border-top:1px solid var(--border);"></div>
     </div>
   </div>
 
@@ -229,62 +218,56 @@ select.wk { background: var(--surface2); border: 1px solid var(--border2); borde
     <!-- ── IMPORT ── -->
     <div class="screen active" id="screen-import">
       <div class="page-header">
-        <div class="page-title">Import Week</div>
-        <div class="page-sub">Screenshot your Outlook calendar and paste it — Claude extracts your yellow customer meetings automatically</div>
+        <div class="page-title">Import from Outlook Export</div>
+        <div class="page-sub">Export your calendar meetings from Outlook and drop the file here</div>
       </div>
 
       <div class="card">
-        <div class="card-title">How to capture</div>
-        <div style="font-size:13px; color:var(--text2); line-height:2;">
-          1. Open Outlook desktop or web calendar in <strong style="color:var(--text)">Work Week</strong> view<br>
-          2. Press <strong style="color:var(--accent)">Windows + Shift + S</strong> → drag to select the whole calendar grid<br>
-          3. Click anywhere in the paste zone below and press <strong style="color:var(--accent)">Ctrl+V</strong><br>
-          4. Hit <strong style="color:var(--text)">Analyze with Claude</strong>
-        </div>
-      </div>
+        <div class="card-title">Drop Your Outlook Export</div>
 
-      <div class="card">
-        <div class="card-title">Paste Your Calendar Screenshot</div>
-
-        <div class="week-row">
-          <label>Week of:</label>
-          <input type="date" id="weekDate" class="wk" onchange="autoWeekLabel()">
-          <input type="text" id="weekLabel" class="wk" placeholder="Week of May 4" style="min-width:180px;">
-        </div>
-
-        <div class="yellow-note">
-          <div class="yellow-swatch"></div>
-          <span>Claude will import <strong>all yellow meetings</strong> (any shade — bright, pale, golden, tentative striped) plus any meeting tagged <strong>[EXTERNAL]</strong> as a safety net.</span>
-        </div>
-
-        <!-- Single paste zone -->
-        <div class="paste-zone" id="pasteZone" tabindex="0"
-          ondragover="onDragOver(event)" ondragleave="onDragLeave()" ondrop="onDrop(event)">
-          <input type="file" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer;z-index:1;" onchange="onFileSelect(event)">
-          <div class="pz-placeholder">
-            <div class="pz-icon">📸</div>
-            <div class="pz-main">Paste your screenshot here</div>
-            <div class="pz-sub">Take a screenshot of your Outlook work week, then click here and press Ctrl+V — or drag and drop the image file</div>
-            <div class="pz-kbd">Ctrl + V</div>
-            <div class="pz-or">or drag & drop · or click to browse</div>
+        <!-- Drop zone — exact pattern from working PVI app -->
+        <div class="drop-zone" id="dropZone" style="position:relative; text-align:center; padding:40px 20px;">
+          <input type="file" id="fileInput" accept=".xlsx,.xls,.csv"
+            style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;z-index:2;">
+          <div id="dzPlaceholder" style="pointer-events:none;">
+            <div style="font-size:44px; margin-bottom:12px;">📊</div>
+            <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:18px; font-weight:700; color:var(--text); margin-bottom:8px;">Drop your Outlook export here</div>
+            <div style="font-size:13px; color:var(--text2); max-width:360px; margin:0 auto; line-height:1.6; margin-bottom:12px;">Accepts .xlsx, .xls, or .csv files exported from Outlook calendar</div>
+            <div style="display:inline-block; background:var(--surface); border:1px solid var(--border2); border-radius:8px; padding:8px 20px; font-size:14px; font-weight:600; color:var(--accent);">Click to browse or drag &amp; drop</div>
           </div>
-          <button class="pz-clear" onclick="clearZone(event)">✕ Clear</button>
-          <div class="pz-loaded">✓ Screenshot loaded</div>
+          <div id="dzLoaded" style="display:none; pointer-events:none;">
+            <div style="font-size:32px; margin-bottom:10px;">✅</div>
+            <div id="dzFileName" style="font-family:'Plus Jakarta Sans',sans-serif; font-size:16px; font-weight:700; color:var(--success); margin-bottom:6px;"></div>
+            <div id="dzFileInfo" style="font-size:13px; color:var(--text2); margin-bottom:12px;"></div>
+            <button class="btn btn-ghost btn-sm" id="clearFileBtn" style="pointer-events:auto; position:relative; z-index:10;">✕ Remove file</button>
+          </div>
         </div>
 
-        <div style="font-size:12px; color:var(--text3); margin-bottom:14px; text-align:center;">
-          💡 <strong style="color:var(--text2);">Ctrl+V anywhere on this page</strong> pastes into the zone automatically — no need to click first
+        <!-- Date range — required to calculate which recurring occurrence happened -->
+        <div style="background:var(--surface2); border:1px solid var(--border2); border-radius:8px; padding:14px 16px; margin-bottom:14px; margin-top:14px;">
+          <div style="font-size:12px; font-weight:600; color:var(--accent); margin-bottom:10px; text-transform:uppercase; letter-spacing:0.8px;">Date Range</div>
+          <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <label style="font-size:12px; color:var(--text2); white-space:nowrap;">From</label>
+              <input type="date" id="rangeFrom" class="form-input" style="width:155px; padding:7px 10px; font-size:13px;">
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <label style="font-size:12px; color:var(--text2); white-space:nowrap;">To</label>
+              <input type="date" id="rangeTo" class="form-input" style="width:155px; padding:7px 10px; font-size:13px;">
+            </div>
+          </div>
         </div>
 
-        <div id="analyzeStatus" style="font-size:13px; color:var(--text2); margin-bottom:8px; min-height:18px; font-weight:500;"></div>
+        <!-- Status / progress -->
+        <div id="analyzeStatus" style="font-size:13px; color:var(--text2); margin-top:10px; min-height:18px; font-weight:500;"></div>
         <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
 
         <div style="display:flex; gap:10px; align-items:center; margin-top:16px;">
-          <button class="btn btn-primary" onclick="analyze()" id="analyzeBtn">
+          <button class="btn btn-primary" onclick="processFile()" id="analyzeBtn" disabled>
             <span class="spinner" id="analyzeSpinner" style="display:none;"></span>
-            ⚡ Analyze with Claude
+            ⚡ Extract Meetings
           </button>
-          <button class="btn btn-ghost" onclick="clearImport()">Clear</button>
+          <button class="btn btn-ghost" onclick="clearFile(null)">Clear</button>
           <span style="font-size:12px; color:var(--text3);" id="imgStatus"></span>
         </div>
       </div>
@@ -318,13 +301,13 @@ select.wk { background: var(--surface2); border: 1px solid var(--border2); borde
         <span style="font-size:13px; font-weight:500; color:var(--text2);">Week:</span>
         <select class="wk" id="weekFilter" onchange="renderMeetings()"><option value="all">All weeks</option></select>
         <button class="btn btn-ghost btn-sm" onclick="exportCSV()">↓ Export CSV</button>
-        <button class="btn btn-danger btn-sm" onclick="clearAllData()">🗑 Clear All</button>
+        <button class="btn btn-danger btn-sm" onclick="clearPending()">🗑 Clear Pending</button>
       </div>
       <div id="meetingsList" class="meeting-list">
         <div class="empty">
           <div class="empty-icon">📅</div>
           <div class="empty-title">No meetings yet</div>
-          <div class="empty-sub">Go to Import Week, paste your Outlook calendar screenshot, and Claude will extract your yellow customer meetings</div>
+          <div class="empty-sub">Go to Import Week and drop your Outlook export file to get started</div>
           <button class="btn btn-primary" onclick="showScreen('import')">Import Week →</button>
         </div>
       </div>
@@ -336,6 +319,21 @@ select.wk { background: var(--surface2); border: 1px solid var(--border2); borde
         <div class="page-title">Quarterly Report</div>
         <div class="page-sub">Summary of completed engagements — ready for your QBR</div>
       </div>
+
+      <!-- Custom Query Box -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title">Ask Claude About Your Data</div>
+        <div style="font-size:13px; color:var(--text2); margin-bottom:12px;">Ask anything — Claude knows all your meeting data. Examples: <em>"Show all meetings with CTSI"</em> · <em>"Which customers did I visit onsite?"</em> · <em>"Summarize my DriveFor5 engagements"</em></div>
+        <div style="display:flex; gap:10px;">
+          <input type="text" class="form-input" id="customQuery" placeholder="e.g. Show me all meetings with Alykas this quarter..." style="flex:1;" onkeydown="if(event.key==='Enter')runCustomQuery()">
+          <button class="btn btn-primary" onclick="runCustomQuery()" id="queryBtn">
+            <span class="spinner" id="querySpinner" style="display:none;"></span>
+            Ask ↗
+          </button>
+        </div>
+        <div id="queryResult" style="display:none; margin-top:16px; padding:16px; background:var(--surface2); border-radius:8px; font-size:14px; color:var(--text2); line-height:1.8; white-space:pre-wrap;"></div>
+      </div>
+
       <div style="display:flex; gap:10px; margin-bottom:24px; flex-wrap:wrap;">
         <button class="btn btn-primary" onclick="generateReport()">⚡ Generate AI Summary</button>
         <button class="btn btn-ghost"   onclick="exportCSV()">↓ Export CSV</button>
@@ -349,9 +347,30 @@ select.wk { background: var(--surface2); border: 1px solid var(--border2); borde
     <!-- ── SETTINGS ── -->
     <div class="screen" id="screen-settings">
       <div class="page-header"><div class="page-title">Settings</div></div>
+
+      <!-- GitHub Gist Cloud Storage -->
+      <div class="card" style="border-color:rgba(88,166,255,0.3);">
+        <div class="card-title">☁ Cloud Storage — GitHub Gist</div>
+        <div style="font-size:13px; color:var(--text2); margin-bottom:14px; line-height:1.7;">
+          Your data saves automatically to a private GitHub Gist — accessible from any browser or machine.<br>
+          Get a token at <strong style="color:var(--accent)">github.com → Settings → Developer Settings → Personal Access Tokens → Tokens (classic)</strong><br>
+          Only needs <strong style="color:var(--text)">gist</strong> scope checked.
+        </div>
+        <div class="apikey-row">
+          <input type="password" class="apikey-input" id="githubToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+          <button class="btn btn-primary" onclick="saveGithubToken()">Save Token</button>
+        </div>
+        <div id="gistStatus" style="font-size:13px; margin-top:10px; display:none;"></div>
+        <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
+          <button class="btn btn-ghost" onclick="syncToGist()">↑ Save to Gist Now</button>
+          <button class="btn btn-ghost" onclick="loadFromGist()">↓ Load from Gist</button>
+        </div>
+        <div id="lastSynced" style="font-size:11px; color:var(--text3); margin-top:10px;"></div>
+      </div>
+
       <div class="card">
         <div class="card-title">Claude API Key</div>
-        <div style="font-size:13px; color:var(--text2); margin-bottom:14px; line-height:1.7;">Required for image analysis and AI field suggestions.<br>Get yours free at <strong style="color:var(--accent)">console.anthropic.com → API Keys</strong></div>
+        <div style="font-size:13px; color:var(--text2); margin-bottom:14px; line-height:1.7;">Required for AI field suggestions and report generation.<br>Get yours free at <strong style="color:var(--accent)">console.anthropic.com → API Keys</strong></div>
         <div class="apikey-row">
           <input type="password" class="apikey-input" id="apiKeyInput" placeholder="sk-ant-api03-...">
           <button class="btn btn-primary" onclick="saveApiKey()">Save</button>
@@ -359,7 +378,7 @@ select.wk { background: var(--surface2); border: 1px solid var(--border2); borde
         <div id="apiKeyStatus" style="font-size:13px; color:var(--success); display:none; margin-top:6px; font-weight:500;">✓ API key saved</div>
       </div>
       <div class="card">
-        <div class="card-title">Data Management</div>
+        <div class="card-title">Local Data Management</div>
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
           <button class="btn btn-ghost" onclick="exportCSV()">↓ Export CSV</button>
           <button class="btn btn-ghost" onclick="exportJSON()">↓ JSON Backup</button>
@@ -387,42 +406,73 @@ const METHODS   = ['Onsite','Virtual - Teams','Conference Call','Email','Phone',
 let meetings  = [];
 let apiKey    = '';
 let extracted = [];
-let imgData   = null; // base64 string without prefix
+let fileData  = null;
+let githubToken = '';
+let gistId    = '';
+let gistSaveTimer = null;
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   loadData();
-  apiKey = localStorage.getItem('sds_apikey') || '';
+  apiKey      = localStorage.getItem('sds_apikey')    || '';
+  githubToken = localStorage.getItem('sds_ghtoken')   || '';
+  gistId      = localStorage.getItem('sds_gistid')    || '';
   if (apiKey) document.getElementById('apiKeyInput').value = apiKey;
-  autoWeekLabel();
+  if (githubToken) {
+    document.getElementById('githubToken').value = githubToken;
+    updateLastSynced();
+    // Auto-load from Gist on startup if token + gistId exist
+    if (gistId) loadFromGist(true);
+  }
   updateSidebar(); updateStats();
-
-  // Global Ctrl+V listener
-  document.addEventListener('paste', e => {
-    const items = e.clipboardData?.items;
-    if (!items) return;
-    for (const item of items) {
-      if (item.type.startsWith('image/')) {
-        e.preventDefault();
-        loadFile(item.getAsFile());
-        showNotif('✓ Screenshot pasted successfully', 'success');
-        return;
-      }
-    }
-  });
-
   if (!apiKey) showNotif('Add your Claude API key in Settings to get started', 'error');
-});
 
-function autoWeekLabel() {
-  const dateInput  = document.getElementById('weekDate');
-  const labelInput = document.getElementById('weekLabel');
-  const base = dateInput.value ? new Date(dateInput.value + 'T12:00:00') : new Date();
-  const monday = new Date(base);
-  monday.setDate(base.getDate() - base.getDay() + (base.getDay() === 0 ? -6 : 1));
-  dateInput.value  = monday.toISOString().split('T')[0];
-  labelInput.value = 'Week of ' + monday.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-}
+  // Default date range to current week
+  const _now = new Date();
+  const _mon = new Date(_now); _mon.setDate(_now.getDate() - _now.getDay() + (_now.getDay()===0?-6:1));
+  const _fri = new Date(_mon); _fri.setDate(_mon.getDate()+4);
+  const _fmt = d => d.toISOString().split('T')[0];
+  const rfEl = document.getElementById('rangeFrom');
+  const rtEl = document.getElementById('rangeTo');
+  if (rfEl && !rfEl.value) rfEl.value = _fmt(_mon);
+  if (rtEl && !rtEl.value) rtEl.value = _fmt(_fri);
+
+  // Wire up drop zone — exact addEventListener pattern from working PVI app
+  var dz = document.getElementById('dropZone');
+  var fi = document.getElementById('fileInput');
+  var clearBtn = document.getElementById('clearFileBtn');
+
+  if (dz && fi) {
+    // File input change (click to browse)
+    fi.addEventListener('change', function() {
+      if (fi.files[0]) loadExcelFile(fi.files[0]);
+    });
+
+    // Drag events on the outer div
+    dz.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      dz.classList.add('drag-over');
+    });
+    dz.addEventListener('dragleave', function() {
+      dz.classList.remove('drag-over');
+    });
+    dz.addEventListener('drop', function(e) {
+      e.preventDefault();
+      dz.classList.remove('drag-over');
+      var file = e.dataTransfer.files[0];
+      if (file) loadExcelFile(file);
+      else showNotif('Please drop an Excel or CSV file', 'error');
+    });
+  }
+
+  if (clearBtn) {
+    clearBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      clearFile();
+    });
+  }
+});
 
 // ── Navigation ────────────────────────────────────────────────────────────────
 function showScreen(name) {
@@ -435,8 +485,165 @@ function showScreen(name) {
 }
 
 // ── Storage ───────────────────────────────────────────────────────────────────
-function saveData() { localStorage.setItem('sds_meetings', JSON.stringify(meetings)); updateSidebar(); updateStats(); updateWeekFilter(); }
-function loadData() { try { meetings = JSON.parse(localStorage.getItem('sds_meetings') || '[]'); } catch(e) { meetings = []; } updateWeekFilter(); }
+function saveData() {
+  localStorage.setItem('sds_meetings', JSON.stringify(meetings));
+  updateSidebar(); updateStats(); updateWeekFilter();
+  // Debounced auto-save to Gist (2s delay to batch rapid changes)
+  if (githubToken) {
+    clearTimeout(gistSaveTimer);
+    gistSaveTimer = setTimeout(() => syncToGist(true), 2000);
+  }
+}
+function loadData() {
+  try { meetings = JSON.parse(localStorage.getItem('sds_meetings') || '[]'); }
+  catch(e) { meetings = []; }
+  updateWeekFilter();
+}
+
+// ── GitHub Gist Storage ───────────────────────────────────────────────────────
+function saveGithubToken() {
+  const token = document.getElementById('githubToken').value.trim();
+  if (!token) return;
+  githubToken = token;
+  localStorage.setItem('sds_ghtoken', token);
+  setGistStatus('✓ Token saved — syncing...', 'success');
+  // First sync creates the Gist if needed
+  syncToGist(false);
+}
+
+async function syncToGist(silent = false) {
+  if (!githubToken) {
+    if (!silent) showNotif('Add your GitHub token in Settings first', 'error');
+    return;
+  }
+  if (!silent) setGistStatus('Saving to GitHub Gist...', 'info');
+
+  const payload = {
+    description: 'SD&S Engagement Tracker Data',
+    public: false,
+    files: {
+      'sds_meetings.json': {
+        content: JSON.stringify({ meetings, savedAt: new Date().toISOString() }, null, 2)
+      }
+    }
+  };
+
+  try {
+    let res;
+    if (gistId) {
+      // Update existing Gist
+      res = await fetch(`https://api.github.com/gists/${gistId}`, {
+        method: 'PATCH',
+        headers: { Authorization: `token ${githubToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } else {
+      // Create new Gist
+      res = await fetch('https://api.github.com/gists', {
+        method: 'POST',
+        headers: { Authorization: `token ${githubToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    }
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || 'GitHub API error ' + res.status);
+    }
+
+    const data = await res.json();
+    gistId = data.id;
+    localStorage.setItem('sds_gistid', gistId);
+    localStorage.setItem('sds_lastsynced', new Date().toISOString());
+    updateLastSynced();
+    if (!silent) {
+      setGistStatus(`✓ Saved to Gist — ${meetings.length} meetings`, 'success');
+      showNotif('✓ Synced to GitHub Gist', 'success');
+    }
+  } catch(e) {
+    if (!silent) {
+      setGistStatus('✗ Sync failed: ' + e.message, 'error');
+      showNotif('Gist sync failed: ' + e.message, 'error');
+    }
+    console.error('Gist sync error:', e);
+  }
+}
+
+async function loadFromGist(silent = false) {
+  if (!githubToken || !gistId) {
+    if (!silent) showNotif('No Gist found — save data first to create one', 'error');
+    return;
+  }
+  if (!silent) setGistStatus('Loading from GitHub Gist...', 'info');
+
+  try {
+    const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+      headers: { Authorization: `token ${githubToken}` }
+    });
+    if (!res.ok) throw new Error('GitHub API error ' + res.status);
+
+    const data = await res.json();
+    const content = data.files?.['sds_meetings.json']?.content;
+    if (!content) throw new Error('No data file found in Gist');
+
+    const parsed = JSON.parse(content);
+    const remoteMeetings = parsed.meetings || parsed; // handle both formats
+    const remoteCount = remoteMeetings.length;
+    const localCount  = meetings.length;
+
+    if (silent) {
+      // On startup: use whichever has more data
+      if (remoteCount > localCount) {
+        meetings = remoteMeetings;
+        saveData();
+        updateSidebar(); updateStats();
+        showNotif(`☁ Loaded ${remoteCount} meetings from GitHub Gist`, 'success');
+      }
+    } else {
+      // Manual load: confirm if overwriting local data
+      if (localCount > 0 && localCount !== remoteCount) {
+        if (!confirm(`Replace your ${localCount} local meetings with ${remoteCount} from Gist?`)) return;
+      }
+      meetings = remoteMeetings;
+      localStorage.setItem('sds_meetings', JSON.stringify(meetings));
+      updateSidebar(); updateStats(); updateWeekFilter();
+      renderMeetings();
+      setGistStatus(`✓ Loaded ${remoteCount} meetings from Gist`, 'success');
+      showNotif(`☁ Loaded ${remoteCount} meetings from Gist`, 'success');
+    }
+  } catch(e) {
+    if (!silent) {
+      setGistStatus('✗ Load failed: ' + e.message, 'error');
+      showNotif('Gist load failed: ' + e.message, 'error');
+    }
+    console.error('Gist load error:', e);
+  }
+}
+
+function setGistStatus(msg, type) {
+  const el = document.getElementById('gistStatus');
+  if (!el) return;
+  el.style.display = 'block';
+  el.style.color = type === 'success' ? 'var(--success)' : type === 'error' ? 'var(--danger)' : 'var(--text2)';
+  el.textContent = msg;
+}
+
+function updateLastSynced() {
+  const el  = document.getElementById('lastSynced');
+  const sb  = document.getElementById('sb-sync');
+  const ts  = localStorage.getItem('sds_lastsynced');
+  if (ts) {
+    const d   = new Date(ts);
+    const str = `Last synced: ${d.toLocaleDateString()} ${d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}`;
+    if (el) el.textContent = str;
+    if (sb) { sb.textContent = '☁ ' + str; sb.style.color = 'var(--success)'; }
+  } else if (gistId) {
+    if (el) el.textContent = `Gist ID: ${gistId}`;
+    if (sb) { sb.textContent = '☁ Gist connected'; sb.style.color = 'var(--text3)'; }
+  } else {
+    if (sb) { sb.textContent = '⚠ No cloud backup'; sb.style.color = 'var(--warning)'; }
+  }
+}
 function saveApiKey() {
   const key = document.getElementById('apiKeyInput').value.trim();
   if (!key) return; apiKey = key; localStorage.setItem('sds_apikey', key);
@@ -444,152 +651,73 @@ function saveApiKey() {
   setTimeout(() => s.style.display = 'none', 2500);
 }
 
-// ── Image Handling ────────────────────────────────────────────────────────────
-function onDragOver(e) { e.preventDefault(); document.getElementById('pasteZone').classList.add('dragover'); }
-function onDragLeave()  { document.getElementById('pasteZone').classList.remove('dragover'); }
-function onDrop(e) {
-  e.preventDefault();
-  document.getElementById('pasteZone').classList.remove('dragover');
-  const file = [...e.dataTransfer.files].find(f => f.type.startsWith('image/'));
-  if (file) loadFile(file);
+// ── File Handling — addEventListener pattern (same as working PVI app) ─────────
+function onFileSelect(e) {
+  const file = e.target.files?.[0];
+  if (file) loadExcelFile(file);
 }
-function onFileSelect(e) { if (e.target.files[0]) loadFile(e.target.files[0]); }
 
-function loadFile(file) {
+function loadExcelFile(file) {
   const reader = new FileReader();
   reader.onload = ev => {
-    const full = ev.target.result;
-    imgData = full.split(',')[1];
-    const zone = document.getElementById('pasteZone');
-    zone.classList.add('has-image');
-    const old = zone.querySelector('img'); if (old) old.remove();
-    const img = document.createElement('img'); img.src = full;
-    zone.insertBefore(img, zone.firstChild);
-    document.getElementById('imgStatus').textContent = '✓ ' + (file.name || 'screenshot') + ' loaded';
+    fileData = ev.target.result;
+    document.getElementById('dzPlaceholder').style.display = 'none';
+    document.getElementById('dzLoaded').style.display = 'block';
+    document.getElementById('dzFileName').textContent = file.name;
+    document.getElementById('dzFileInfo').textContent = `${(file.size/1024).toFixed(1)} KB · Ready to extract`;
+    document.getElementById('analyzeBtn').disabled = false;
+    showNotif(`✓ ${file.name} loaded`, 'success');
   };
-  reader.readAsDataURL(file);
+  reader.readAsArrayBuffer(file);
 }
 
-function clearZone(e) {
-  if (e) e.stopPropagation();
-  imgData = null;
-  const zone = document.getElementById('pasteZone');
-  zone.classList.remove('has-image');
-  const img = zone.querySelector('img'); if (img) img.remove();
-  const inp = zone.querySelector('input[type=file]'); if (inp) inp.value = '';
-  document.getElementById('imgStatus').textContent = '';
-}
-
-function clearImport() {
-  clearZone(null);
+function clearFile(e) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  fileData = null;
+  document.getElementById('dzPlaceholder').style.display = 'block';
+  document.getElementById('dzLoaded').style.display = 'none';
+  document.getElementById('analyzeBtn').disabled = true;
+  document.getElementById('fileInput').value = '';
   document.getElementById('extractedSection').style.display = 'none';
   setStatus(''); setProgress(0);
 }
 
-// ── Analyze ───────────────────────────────────────────────────────────────────
-async function analyze() {
-  if (!imgData)  { showNotif('Please paste or drop a screenshot first', 'error'); return; }
-  if (!apiKey)   { showNotif('Add your Claude API key in Settings first', 'error'); showScreen('settings'); return; }
-
-  const weekLabel = document.getElementById('weekLabel').value.trim() || 'This week';
-  const weekDate  = document.getElementById('weekDate').value;
-
-  // Build Mon-Fri date map
-  let weekDates = {};
-  if (weekDate) {
-    const base = new Date(weekDate + 'T12:00:00');
-    const mon = new Date(base); mon.setDate(base.getDate() - base.getDay() + 1);
-    ['Monday','Tuesday','Wednesday','Thursday','Friday'].forEach((day, i) => {
-      const d = new Date(mon); d.setDate(mon.getDate() + i);
-      weekDates[day] = d.toISOString().split('T')[0];
-    });
-  }
+// ── Process Excel File ────────────────────────────────────────────────────────
+async function processFile() {
+  if (!fileData) { showNotif('Please drop a file first', 'error'); return; }
 
   const btn = document.getElementById('analyzeBtn');
   btn.disabled = true;
   document.getElementById('analyzeSpinner').style.display = 'inline-block';
-  setStatus('Reading your calendar with Claude Vision...');
+  setStatus('Parsing Outlook export...');
   setProgress(20);
 
-  const dateHint = Object.keys(weekDates).length
-    ? `Date mapping:\n${Object.entries(weekDates).map(([d,dt]) => `  ${d} = ${dt}`).join('\n')}`
-    : `Today is ${new Date().toISOString().split('T')[0]}`;
-
-  const prompt = `You are analyzing an Outlook calendar screenshot for the week of: ${weekLabel}
-${dateHint}
-
-TASK: Extract customer/partner meetings to import into a sales engagement tracker.
-
-WHICH MEETINGS TO INCLUDE:
-1. ANY meeting with a YELLOW background — this is the primary rule. Yellow includes ALL shades:
-   - Bright golden yellow (like CTSI DPV)
-   - Medium yellow (like PVI Discussion)
-   - Pale/light yellow (like Alykas meetings)
-   - Striped/hatched yellow pattern (tentative meetings)
-   - Cream or warm white-yellow tones
-   When in doubt about whether something is yellow — INCLUDE IT.
-2. ANY meeting with [EXTERNAL] in the title — include these regardless of color as a safety net.
-
-WHICH MEETINGS TO SKIP:
-- Meetings with clearly NON-yellow backgrounds: blue, teal, green, pink, red, salmon, grey, purple, white
-- Meetings with "Canceled:" prefix
-- All-day banner events (PTO, holidays, etc.)
-- Pure internal Ingram meetings with no external company
-
-For each included meeting, return this JSON:
-{
-  "title": "clean title — remove [EXTERNAL], FW:, RE:, Canceled:, and any URLs or Webex/Teams links",
-  "date": "YYYY-MM-DD from the date mapping above based on which day column it appears in",
-  "dayOfWeek": "Monday|Tuesday|Wednesday|Thursday|Friday",
-  "startTime": "9:00 AM",
-  "endTime": "10:00 AM",
-  "duration": 1.0,
-  "company": "the EXTERNAL customer or partner company name — extract from the meeting title. Examples: 'CTSI DPV' → 'CTSI', 'PVI Discussion' → 'PVI', 'Alykas Cisco 360 call' → 'Alykas', 'Great news SMB and Mid-Market Business' → use title as company. NEVER use 'Ingram', 'Vurpillat', 'Curt', or 'IM' as the company.",
-  "contact": "person's name if visible, not Curt Vurpillat",
-  "attendees": 2,
-  "contactMethod": "Virtual - Teams|Onsite|Conference Call|Phone|Webinar|Email",
-  "notes": "any visible location, description, or attendee info"
-}
-
-Return ONLY a valid JSON array. No markdown, no explanation, no extra text.`;
-
   try {
-    setProgress(45);
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: 'image/png', data: imgData } },
-            { type: 'text', text: prompt }
-          ]
-        }]
-      })
-    });
+    setProgress(40);
+    const workbook = XLSX.read(fileData, { type: 'array', cellDates: false });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
 
-    setProgress(80);
-    if (!res.ok) { const err = await res.json(); throw new Error(err.error?.message || 'API error ' + res.status); }
+    setStatus(`Parsed ${rows.length} rows · Filtering yellow meetings...`);
+    setProgress(60);
 
-    const data = await res.json();
-    const raw  = data.content[0].text.trim().replace(/^```json\s*/,'').replace(/\s*```$/,'').trim();
-    extracted  = JSON.parse(raw);
-    extracted.forEach(m => m.weekLabel = weekLabel);
+    extracted = parseOutlookRows(rows);
+    setProgress(90);
+
+    if (!extracted.length) {
+      showNotif('No meetings found — check your date range and file format', 'error');
+      setStatus('No meetings found in date range');
+      setProgress(0);
+      return;
+    }
 
     setProgress(100);
-    setStatus(`Found ${extracted.length} meeting${extracted.length !== 1 ? 's' : ''}`);
+    setStatus(`Found ${extracted.length} meeting${extracted.length!==1?'s':''} — ready to review and import`);
     showExtracted();
 
   } catch(e) {
-    showNotif('Analysis failed: ' + e.message, 'error');
+    showNotif('Parse failed: ' + e.message, 'error');
     setStatus('Error: ' + e.message);
     setProgress(0);
   } finally {
@@ -598,40 +726,364 @@ Return ONLY a valid JSON array. No markdown, no explanation, no extra text.`;
   }
 }
 
-function showExtracted() {
-  if (!extracted.length) { showNotif('No yellow or [EXTERNAL] meetings found — try a different screenshot', 'error'); return; }
-  document.getElementById('extractedCount').textContent = `${extracted.length} meeting${extracted.length!==1?'s':''} found`;
-  document.getElementById('extractedList').innerHTML = extracted.map((m,i) => `
-    <div class="meeting-card" style="border-left: 3px solid var(--yellow);">
-      <div class="mc-header" style="cursor:default;">
-        <div class="mc-time">
-          <div class="mc-time-val">${m.startTime||'?'}</div>
-          <div class="mc-time-dur">${m.duration||'?'}h</div>
-        </div>
-        <div>
-          <div class="mc-company">${esc(m.company||m.title)}</div>
-          <div class="mc-meeting">${esc(m.title)}</div>
-          <div class="mc-meta">
-            <span class="mc-meta-item">${esc(m.dayOfWeek||'')} ${esc(m.date||'')}</span>
-            <span class="mc-meta-item">👥 ${m.attendees||1}</span>
-            <span class="mc-meta-item">${esc(m.contactMethod||'')}</span>
-          </div>
-        </div>
-        <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;cursor:pointer;flex-shrink:0;color:var(--text2);">
-          <input type="checkbox" checked id="inc-${i}" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;"> Include
-        </label>
-      </div>
-    </div>`).join('');
+// ── Core Parser ──────────────────────────────────────────────────────────────
+function parseOutlookRows(rows) {
+  const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const ORD  = { first:1, second:2, third:3, fourth:4, last:-1 };
+  const results = [];
+  const seen = new Set();
 
+  // Date range from UI
+  const rfVal = document.getElementById('rangeFrom').value;
+  const rtVal = document.getElementById('rangeTo').value;
+  const rangeFrom = rfVal ? new Date(rfVal + 'T00:00:00') : null;
+  const rangeTo   = rtVal ? new Date(rtVal + 'T23:59:59') : null;
+
+  // ── Group rows into meeting blocks ────────────────────────────────────────────
+  const START_RE = /^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+\d+\/\d+\/\d{4}|\d+\/\d+\/\d{4}/i;
+  const blocks = [];
+  let cur = null;
+  rows.forEach(row => {
+    const get = k => String(row[k] || '').trim();
+    const subj = get('Subject'), loc = get('Location'), start = get('Start'),
+          end  = get('End'),   req  = get('Required Attendees'),
+          opt  = get('Optional Attendees'), msg = get('Message');
+    if (START_RE.test(start) && subj && subj !== 'nan') {
+      cur = { subject:subj, location:loc, startStr:start, endStr:end,
+              req, opt, message:msg, body:[] };
+      blocks.push(cur);
+    } else if (cur) {
+      [subj,loc,end,req,opt,msg].forEach(v => { if (v && v !== 'nan') cur.body.push(v); });
+    }
+  });
+
+  // ── Helper: parse Outlook date string ─────────────────────────────────────────
+  function parseOLDate(s) {
+    const clean = s.replace(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+/i, '').trim();
+    const d = new Date(clean);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  // ── Helper: nth weekday of month (e.g. 2nd Monday) ────────────────────────────
+  function nthDOW(year, month, dow, nth) {
+    if (nth === -1) { // last
+      let d = new Date(year, month+1, 0);
+      while (d.getDay() !== dow) d = new Date(d - 86400000);
+      return d;
+    }
+    let d = new Date(year, month, 1);
+    while (d.getDay() !== dow) d = new Date(d.getTime() + 86400000);
+    d = new Date(d.getTime() + (nth-1)*7*86400000);
+    return d.getMonth() === month ? d : null;
+  }
+
+  // ── Helper: detect recurrence from block ─────────────────────────────────────
+  function detectRec(block, startDt) {
+    const DAY_IDX = {sunday:0,monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6};
+    const all = [block.location, ...block.body].join(' ');
+    const al  = all.toLowerCase();
+
+    // Structured patterns (most reliable — Outlook puts these in Location of continuation rows)
+    for (const part of [block.location, ...block.body]) {
+      const p = part.trim(); const pl = p.toLowerCase();
+      // "the fourth Tuesday of every 1 month(s)..."
+      let m = pl.match(/the (first|second|third|fourth|last) (monday|tuesday|wednesday|thursday|friday|saturday|sunday) of every \d+ month/);
+      if (m) return { type:'monthly-nth', dow:DAY_IDX[m[2]], nth:ORD[m[1]] };
+      // "Occurs on Tuesday every other week..."
+      m = pl.match(/occurs on (monday|tuesday|wednesday|thursday|friday|saturday|sunday) every other week/);
+      if (m) return { type:'biweekly', dow:DAY_IDX[m[1]] };
+      // "every Wednesday from..." or "every other Wednesday from..."
+      m = pl.match(/^every (other )?(monday|tuesday|wednesday|thursday|friday|saturday|sunday) from/);
+      if (m) return { type: m[1] ? 'biweekly' : 'weekly', dow:DAY_IDX[m[2]] };
+      // "Monthly" standalone
+      if (/^monthly$/i.test(p)) return { type:'monthly-dom', dow:null };
+      // "Weekly" standalone
+      if (/^weekly$/i.test(p)) return { type:'weekly', dow:startDt.getDay() };
+    }
+    // Free text fallbacks
+    if (/every (other|2) week|bi.?weekly|biweekly/i.test(al)) return { type:'biweekly', dow:startDt.getDay() };
+    if (/every week|\bweekly\b/i.test(al) && !/bi.?weekly/i.test(al)) return { type:'weekly', dow:startDt.getDay() };
+    if (/every month|\bmonthly\b/i.test(al)) return { type:'monthly-dom', dow:null };
+    return null;
+  }
+
+  // ── Helper: expand recurrence into dates within range ────────────────────────
+  function expandRec(rec, startDt, h, mn, from, to) {
+    const dates = [];
+    if (!from || !to) return dates;
+    const eff = startDt > from ? new Date(startDt) : new Date(from);
+
+    if (rec.type === 'weekly' || rec.type === 'biweekly') {
+      const interval = rec.type === 'biweekly' ? 14 : 7;
+      let d = new Date(startDt); d.setHours(h, mn, 0, 0);
+      // Align to correct DOW
+      while (d.getDay() !== rec.dow) d = new Date(d.getTime() + 86400000);
+      // Advance by intervals to reach eff
+      while (d < eff) d = new Date(d.getTime() + interval*86400000);
+      while (d <= to) { dates.push(new Date(d)); d = new Date(d.getTime() + interval*86400000); }
+
+    } else if (rec.type === 'monthly-dom') {
+      let d = new Date(startDt); d.setHours(h, mn, 0, 0);
+      while (d < eff) { d = new Date(d); d.setMonth(d.getMonth()+1); }
+      while (d <= to) { dates.push(new Date(d)); d = new Date(d); d.setMonth(d.getMonth()+1); }
+
+    } else if (rec.type === 'monthly-nth') {
+      let d = new Date(eff); d.setDate(1); d.setMonth(d.getMonth()-1);
+      while (d <= to) {
+        const occ = nthDOW(d.getFullYear(), d.getMonth(), rec.dow, rec.nth);
+        if (occ) {
+          occ.setHours(h, mn, 0, 0);
+          if (occ >= eff && occ <= to) dates.push(occ);
+        }
+        d.setMonth(d.getMonth()+1);
+      }
+    }
+    return dates;
+  }
+
+  // ── Process each block ────────────────────────────────────────────────────────
+  blocks.forEach(block => {
+    const subject = block.subject;
+    if (!subject || /^canceled:/i.test(subject)) return;
+
+    const startDt = parseOLDate(block.startStr);
+    const endDt   = parseOLDate(block.endStr);
+    if (!startDt) return;
+
+    let durationHrs = (endDt && !isNaN(endDt))
+      ? Math.round(((endDt - startDt)/3600000)*2)/2 : 0;
+    if (durationHrs <= 0) {
+      const dm = block.body.join(' ').match(/(\d+)\s+(hour|minute)/i);
+      durationHrs = dm ? (dm[2][0].toLowerCase()==='h' ? parseInt(dm[1]) : Math.round(parseInt(dm[1])/60*2)/2) : 1;
+    }
+
+    // Attendees
+    const allAtt = [...(block.req + '; ' + block.opt).split(';')]
+      .map(a=>a.trim()).filter(a=>a && a!=='nan' && !/vurpillat/i.test(a));
+    const attendeeCount = Math.max(allAtt.length+1,1);
+
+    // Contact method
+    const allText = (block.location + ' ' + block.body.join(' ')).toLowerCase();
+    let contactMethod = 'Virtual - Teams';
+    if      (/webex/i.test(block.location) || /webex/i.test(allText.substring(0,300))) contactMethod = 'Virtual - Teams';
+    else if (/microsoft teams|teams meeting/i.test(block.location)) contactMethod = 'Virtual - Teams';
+    else if (/zoom/i.test(block.location)) contactMethod = 'Virtual - Teams';
+    else if (/conference call|dial.in/i.test(block.location)) contactMethod = 'Conference Call';
+    else if (block.location && !/^https?:/i.test(block.location) && block.location.length > 3
+             && !/webex|teams|zoom|none/i.test(block.location)) contactMethod = 'Onsite';
+
+    // Clean title + company
+    const title   = subject.replace(/^\[EXTERNAL\]\s*/i,'').replace(/^(FW:|RE:)\s*/i,'').trim();
+    const company = extractCompany(title, allAtt, block.body.join(' '));
+    const notes   = block.message.replace(/-~-~.*$/s,'').replace(/-- Do not delete.*$/s,'').trim().substring(0,280);
+
+    // ── Determine which dates to generate ──────────────────────────────────────
+    const rec = detectRec(block, startDt);
+    const h = startDt.getHours(), mn = startDt.getMinutes();
+    const startDow = startDt.getDay(); // day of week from original start date
+
+    // Helper: find the occurrence of a given DOW within the date range
+    function dowInRange(dow, from, to) {
+      if (!from || !to) return null;
+      let d = new Date(from);
+      // Advance to first occurrence of the target DOW
+      while (d.getDay() !== dow) d = new Date(d.getTime() + 86400000);
+      // If that's within range, use it
+      if (d <= to) { d.setHours(h, mn, 0, 0); return d; }
+      return null;
+    }
+
+    let occurrences = []; // array of { date, isGuessed }
+
+    if (rec && rangeFrom && rangeTo) {
+      const expanded = expandRec(rec, startDt, h, mn, rangeFrom, rangeTo);
+      if (expanded.length > 0) {
+        expanded.forEach(d => occurrences.push({ date:d, isGuessed:false }));
+      } else {
+        const d = dowInRange(startDow, rangeFrom, rangeTo);
+        if (d) occurrences.push({ date:d, isGuessed:true });
+      }
+    } else if (!rec) {
+      const inRange = (!rangeFrom || startDt >= rangeFrom) && (!rangeTo || startDt <= rangeTo);
+      if (inRange) {
+        occurrences.push({ date:startDt, isGuessed:false });
+      } else {
+        const d = dowInRange(startDow, rangeFrom, rangeTo);
+        if (d) occurrences.push({ date:d, isGuessed:true });
+        else occurrences.push({ date:startDt, isGuessed:true });
+      }
+    } else {
+      occurrences.push({ date:startDt, isGuessed:false });
+    }
+
+    // ── Build result records ──────────────────────────────────────────────────
+    occurrences.forEach(({ date, isGuessed }) => {
+      const dateStr = date.toISOString().split('T')[0];
+      const key = title + '|' + dateStr;
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      const monday = new Date(date);
+      monday.setDate(date.getDate() - date.getDay() + (date.getDay()===0?-6:1));
+      const weekLabel = 'Week of ' + monday.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+
+      results.push({
+        title, company,
+        date:          dateStr,
+        dayOfWeek:     DAYS[date.getDay()],
+        startTime:     date.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true}),
+        endTime:       new Date(date.getTime()+durationHrs*3600000).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true}),
+        duration:      durationHrs,
+        weekLabel,
+        contact:       allAtt[0] || '',
+        attendees:     attendeeCount,
+        contactMethod,
+        location:      block.location.substring(0,120),
+        notes,
+        isRecurring:   !!rec,
+        isGuessed,
+        needsDate:     false
+      });
+    });
+  });
+
+  return results;
+}
+
+function extractCompany(title, attendees, message) {
+  const patterns = [
+    /^([^|]+)\s*\|/,
+    /^([A-Z][a-zA-Z0-9\s&'.]+?)\s*[-–]\s/,
+    /\bwith\s+([A-Z][a-zA-Z0-9\s&'.]+?)(?:\s+team|\s+Cisco|\s+Ingram|$)/i,
+    /^([A-Z][a-zA-Z0-9\s&'.]+?)\s+(?:Business Plan|Monthly|Cadence|QBR|Sync|Discussion|Meeting|Call)/i,
+  ];
+  for (const pat of patterns) {
+    const m = title.match(pat);
+    if (m) {
+      const candidate = m[1].trim();
+      if (!/^(Cisco|Ingram|SESSION|EXTERNAL|Curt|The|A |An |Re:|FW:)/i.test(candidate) && candidate.length > 2) return candidate;
+    }
+  }
+  return title.split(/\s+/).slice(0,3).join(' ') || title.substring(0,30);
+}
+
+function showExtracted() {
+  if (!extracted.length) { showNotif('No meetings found — try adjusting the date range', 'error'); return; }
+
+  // Sort all meetings by date then start time chronologically
+  const sorted = [...extracted].map((m, i) => ({ ...m, _idx: i })).sort((a, b) => {
+    const dateCompare = (a.date || '').localeCompare(b.date || '');
+    if (dateCompare !== 0) return dateCompare;
+    // Parse start times for time comparison
+    const toMins = t => {
+      if (!t) return 0;
+      const m = t.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+      if (!m) return 0;
+      let h = parseInt(m[1]), min = parseInt(m[2]), ampm = (m[3]||'').toUpperCase();
+      if (ampm === 'PM' && h !== 12) h += 12;
+      if (ampm === 'AM' && h === 12) h = 0;
+      return h * 60 + min;
+    };
+    return toMins(a.startTime) - toMins(b.startTime);
+  });
+
+  // Group by week, preserving chronological week order
+  const weekOrder = [];
+  const byWeek = {};
+  sorted.forEach(m => {
+    const w = m.weekLabel || 'Other';
+    if (!byWeek[w]) { byWeek[w] = []; weekOrder.push(w); }
+    byWeek[w].push(m);
+  });
+  // Deduplicate week order while preserving order
+  const weeks = [...new Set(weekOrder)];
+
+  document.getElementById('extractedCount').textContent =
+    `${extracted.length} meeting${extracted.length!==1?'s':''} · ${weeks.length} week${weeks.length!==1?'s':''}`;
+
+  function fmtDate(dateStr, dow) {
+    if (!dateStr) return dow || '';
+    try {
+      const d = new Date(dateStr + 'T12:00:00');
+      return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    } catch(e) { return dow || dateStr; }
+  }
+
+  let html = '';
+  weeks.forEach(week => {
+    const wMeetings = byWeek[week];
+    html += `
+      <div style="display:flex; align-items:center; gap:10px; margin-top:24px; margin-bottom:12px;">
+        <div style="font-size:15px; font-weight:800; color:var(--accent); font-family:'Plus Jakarta Sans',sans-serif;">📅 ${esc(week)}</div>
+        <div style="flex:1; height:1px; background:var(--border);"></div>
+        <div style="font-size:12px; color:var(--text3); font-weight:500;">${wMeetings.length} meeting${wMeetings.length!==1?'s':''}</div>
+      </div>`;
+
+    wMeetings.forEach(m => {
+      const isOnsite = m.contactMethod === 'Onsite';
+      const methodLabel = isOnsite ? '🏢 Onsite' : '💻 Virtual';
+      const dateLabel = fmtDate(m.date, m.dayOfWeek);
+
+    html += `
+      <div class="meeting-card" style="border-left:3px solid var(--yellow); margin-bottom:8px;">
+        <div style="display:grid; grid-template-columns:72px 46px 1fr auto; gap:12px; align-items:center; padding:12px 16px; cursor:default;" data-midx="${encodeURIComponent(JSON.stringify(m))}">
+
+          <!-- Date + time badge -->
+          <div style="background:var(--surface2); border:1px solid var(--border2); border-radius:8px; padding:8px 6px; text-align:center; position:relative;">
+            ${m.isGuessed ? `<div title="Date extrapolated from day-of-week" style="position:absolute;top:-6px;right:-6px;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:12px solid var(--danger);filter:drop-shadow(0 0 2px rgba(248,81,73,0.5));"></div>` : ''}
+            <div style="font-size:12px; font-weight:700; color:var(--text); line-height:1.3;">${esc(dateLabel)}</div>
+            <div style="font-size:11px; color:var(--accent); margin-top:3px;">${esc(m.startTime||'')}</div>
+          </div>
+
+          <!-- Duration badge — grey default, green if > 1hr -->
+          <div style="background:${m.duration>1?'rgba(63,185,80,0.15)':'rgba(100,110,130,0.2)'}; border:1px solid ${m.duration>1?'rgba(63,185,80,0.35)':'rgba(100,110,130,0.3)'}; border-radius:8px; padding:6px 4px; text-align:center;">
+            <div style="font-size:18px; font-weight:800; color:${m.duration>1?'var(--success)':'#8899aa'}; line-height:1;">${m.duration||'?'}</div>
+            <div style="font-size:9px; font-weight:600; color:${m.duration>1?'rgba(63,185,80,0.7)':'rgba(136,153,170,0.7)'}; text-transform:uppercase; letter-spacing:0.8px; margin-top:2px;">hrs</div>
+          </div>
+
+          <!-- Info -->
+          <div style="min-width:0;">
+            <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:15px; font-weight:700; color:var(--text); margin-bottom:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(m.title)}</div>
+            <div style="display:flex; gap:12px; align-items:center;">
+              <span style="font-size:12px; color:var(--text2);">👥 ${m.attendees||1} attendee${(m.attendees||1)!==1?'s':''}</span>
+              <span style="font-size:12px; color:${isOnsite?'#fb923c':'var(--text2)'}; font-weight:${isOnsite?'600':'400'};">${methodLabel}</span>
+              ${m.isRecurring ? `<span style="font-size:10px; color:var(--accent); background:rgba(88,166,255,0.1); border:1px solid rgba(88,166,255,0.2); border-radius:10px; padding:1px 7px; font-weight:600;">↻ Recurring</span>` : ''}
+            </div>
+          </div>
+
+          <!-- Include checkbox -->
+          <label style="display:flex; flex-direction:column; align-items:center; gap:5px; font-size:11px; font-weight:500; cursor:pointer; color:var(--text2); flex-shrink:0;">
+            <input type="checkbox" checked id="inc-${m._idx}" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;">
+            Include
+          </label>
+        </div>
+      </div>`;
+    });
+  });
+
+  document.getElementById('extractedList').innerHTML = html;
   const sec = document.getElementById('extractedSection');
   sec.style.display = 'block';
   sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function importExtracted() {
-  const toImport = extracted.filter((_,i) => {
-    const cb = document.getElementById('inc-'+i); return cb && cb.checked;
+  // Collect all checked meetings using their _idx stored on the checkbox
+  const toImport = [];
+  document.querySelectorAll('[id^="inc-"]').forEach(cb => {
+    if (cb.checked) {
+      const idx = parseInt(cb.id.replace('inc-',''));
+      // Find matching entry — sorted array has _idx referencing original extracted array
+      // We stored the full meeting object in a data attribute as JSON
+      const card = cb.closest('[data-midx]');
+      if (card) {
+        try { toImport.push(JSON.parse(decodeURIComponent(card.dataset.midx))); } catch(e) {}
+      }
+    }
   });
+
+  if (!toImport.length) { showNotif('No meetings selected', 'error'); return; }
+
   toImport.forEach(m => {
     meetings.push({
       id: 'mtg_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
@@ -648,7 +1100,7 @@ function importExtracted() {
   });
   saveData();
   document.getElementById('extractedSection').style.display = 'none';
-  clearImport(); extracted = [];
+  clearFile(null); extracted = [];
   showNotif(`✓ Imported ${toImport.length} meeting${toImport.length!==1?'s':''}`, 'success');
   showScreen('meetings');
 }
@@ -746,6 +1198,7 @@ function buildCard(m) {
         <div class="form-group full"><label class="form-label">Description / Notes</label><textarea class="form-input" onchange="updateField('${m.id}','description',this.value)">${esc(m.description||m.notes||'')}</textarea></div>
       </div>
       <div class="form-actions">
+        <button class="btn btn-danger btn-sm" onclick="deleteMeeting('${m.id}')">🗑 Delete</button>
         <button class="btn btn-ghost btn-sm" onclick="skipMeeting('${m.id}')">Skip</button>
         <button class="btn btn-ghost btn-sm" onclick="aiSuggest('${m.id}')">⚡ AI Suggest</button>
         <button class="btn btn-success btn-sm" onclick="completeMeeting('${m.id}')">✓ Mark Complete</button>
@@ -975,6 +1428,10 @@ function exportCSV() {
   const a=document.createElement('a');a.href='data:text/csv,'+encodeURIComponent(csv);a.download=`sds_engagements_${new Date().toISOString().split('T')[0]}.csv`;a.click();
   showNotif('✓ CSV exported','success');
 }
+function clearAllData() {
+  if(!confirm('Clear ALL meeting data including completed records? This cannot be undone.'))return;
+  meetings=[];saveData();renderMeetings();showNotif('All data cleared','success');
+}
 function exportJSON() {
   const a=document.createElement('a');a.href='data:application/json,'+encodeURIComponent(JSON.stringify(meetings,null,2));a.download=`sds_backup_${new Date().toISOString().split('T')[0]}.json`;a.click();
 }
@@ -983,9 +1440,63 @@ function importJSON() {
   i.onchange=e=>{const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(Array.isArray(d)){meetings=[...meetings,...d];saveData();renderMeetings();showNotif(`✓ Imported ${d.length} meetings`,'success');}}catch(err){showNotif('Invalid JSON file','error');}};r.readAsText(e.target.files[0]);};
   i.click();
 }
-function clearAllData() {
-  if(!confirm('Clear ALL meeting data? This cannot be undone.'))return;
-  meetings=[];saveData();renderMeetings();showNotif('All data cleared','success');
+function clearPending() {
+  const count = meetings.filter(m=>m.status==='pending').length;
+  if (!count) { showNotif('No pending meetings to clear','error'); return; }
+  if (!confirm(`Clear ${count} pending meeting${count!==1?'s':''}? Completed meetings will not be affected.`)) return;
+  meetings = meetings.filter(m => m.status !== 'pending');
+  saveData(); renderMeetings(); showNotif(`✓ Cleared ${count} pending meeting${count!==1?'s':''}`, 'success');
+}
+
+function deleteMeeting(id) {
+  if (!confirm('Delete this meeting permanently?')) return;
+  meetings = meetings.filter(m => m.id !== id);
+  saveData(); renderMeetings(); showNotif('Meeting deleted', 'success');
+}
+
+async function runCustomQuery() {
+  if (!apiKey) { showNotif('Add API key in Settings','error'); return; }
+  const query = document.getElementById('customQuery').value.trim();
+  if (!query) { showNotif('Please enter a question first','error'); return; }
+  if (!meetings.length) { showNotif('No meeting data yet','error'); return; }
+
+  const btn = document.getElementById('queryBtn');
+  btn.disabled = true;
+  document.getElementById('querySpinner').style.display = 'inline-block';
+  document.getElementById('queryResult').style.display = 'none';
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`You are a sales data assistant. Answer this question about the user's engagement data:
+
+QUESTION: ${query}
+
+MEETING DATA:
+${JSON.stringify(meetings.map(m=>({
+  date:m.date, dayOfWeek:m.dayOfWeek, week:m.weekLabel,
+  company:m.company, contact:m.contact, title:m.title,
+  duration:m.duration, engagementType:m.engagementType,
+  category:m.category, audience:m.audience,
+  contactMethod:m.contactMethod, attendees:m.attendees,
+  demo:m.demo, services:m.services, opportunity:m.opportunity,
+  c360:m.c360, driveFor5:m.driveFor5, runTo1:m.runTo1,
+  successStory:m.successStory, description:m.description,
+  status:m.status
+})),null,2)}
+
+Answer clearly and concisely. If listing meetings, include date, company, and type. If none match, say so plainly.`}]})
+    });
+    const data = await res.json();
+    const result = document.getElementById('queryResult');
+    result.textContent = data.content[0].text;
+    result.style.display = 'block';
+  } catch(e) { showNotif('Query failed: '+e.message,'error'); }
+  finally {
+    btn.disabled = false;
+    document.getElementById('querySpinner').style.display = 'none';
+  }
 }
 function setStatus(msg) { document.getElementById('analyzeStatus').textContent=msg; }
 function setProgress(pct) {
