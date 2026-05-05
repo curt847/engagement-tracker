@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SD&S Quarterly Engagement Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1117; --surface: #161b22; --surface2: #1c2333; --surface3: #0d1117;
+  --border: #21262d; --border2: #30363d;
+  --accent: #58a6ff; --accent2: #1f6feb;
+  --success: #3fb950; --warning: #d29922; --danger: #f85149;
+  --text: #e6edf3; --text2: #8b949e; --text3: #484f58;
+  --yellow: #f5c542;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; line-height: 1.6; }
+
+.app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+
+/* Sidebar */
+.sidebar { background: var(--surface3); border-right: 1px solid var(--border); padding: 0; position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; }
+.sidebar-logo { display: flex; align-items: center; gap: 12px; padding: 20px 18px; border-bottom: 1px solid var(--border); }
+.logo-box { width: 36px; height: 36px; background: linear-gradient(135deg, var(--accent2), var(--accent)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.logo-text { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 800; line-height: 1.2; }
+.logo-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.nav-section { padding: 12px 8px; flex: 1; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--text2); transition: all 0.15s; border-radius: 6px; margin-bottom: 2px; }
+.nav-item:hover { color: var(--text); background: var(--surface2); }
+.nav-item.active { color: var(--accent); background: rgba(88,166,255,0.1); }
+.nav-icon { font-size: 16px; width: 20px; text-align: center; }
+.sidebar-footer { padding: 16px 18px; border-top: 1px solid var(--border); }
+.sidebar-stat { font-size: 12px; color: var(--text2); margin-bottom: 5px; display: flex; justify-content: space-between; }
+.sidebar-stat span { color: var(--accent); font-weight: 600; }
+
+/* Main */
+.main { padding: 32px 36px; overflow-y: auto; max-height: 100vh; }
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* Page header */
+.page-header { margin-bottom: 28px; }
+.page-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 26px; font-weight: 800; margin-bottom: 4px; }
+.page-sub { font-size: 13px; color: var(--text2); }
+
+/* Cards */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+.card-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; color: var(--text); }
+.card-title::before { content: ''; width: 3px; height: 16px; background: var(--accent); border-radius: 2px; display: block; }
+
+/* Stats */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 16px; text-align: center; }
+.stat-val { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 30px; font-weight: 800; line-height: 1; }
+.stat-lbl { font-size: 11px; font-weight: 500; color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 6px; }
+.c-accent { color: var(--accent); } .c-success { color: var(--success); } .c-warning { color: var(--yellow); }
+
+/* Single paste zone */
+.paste-zone {
+  border: 2px dashed var(--border2); border-radius: 12px; min-height: 220px;
+  background: var(--surface2); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 14px;
+  transition: all 0.2s; cursor: pointer; position: relative; outline: none;
+  margin-bottom: 16px;
+}
+.paste-zone:focus, .paste-zone.dragover { border-color: var(--accent); background: rgba(88,166,255,0.05); box-shadow: 0 0 0 3px rgba(88,166,255,0.1); }
+.paste-zone.has-image { min-height: auto; border-style: solid; border-color: var(--success); cursor: default; padding: 0; overflow: hidden; }
+.paste-zone.has-image .pz-placeholder { display: none; }
+.paste-zone img { width: 100%; display: block; border-radius: 10px; max-height: 500px; object-fit: contain; }
+.pz-placeholder { display: flex; flex-direction: column; align-items: center; gap: 10px; pointer-events: none; }
+.pz-icon { font-size: 44px; }
+.pz-main { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 700; color: var(--text); }
+.pz-sub { font-size: 13px; color: var(--text2); text-align: center; line-height: 1.6; max-width: 340px; }
+.pz-kbd { display: inline-flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border2); border-radius: 8px; padding: 8px 18px; font-size: 15px; font-weight: 700; color: var(--accent); margin-top: 4px; font-family: 'Inter', monospace; }
+.pz-or { font-size: 12px; color: var(--text3); }
+.pz-clear { position: absolute; top: 10px; right: 10px; background: rgba(13,17,23,0.85); color: var(--danger); border: 1px solid var(--border2); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 12px; font-family: 'Inter', sans-serif; display: none; z-index: 3; }
+.paste-zone.has-image .pz-clear { display: block; }
+.pz-loaded { position: absolute; top: 10px; left: 10px; background: var(--success); color: #0d1117; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px; display: none; z-index: 2; }
+.paste-zone.has-image .pz-loaded { display: block; }
+
+/* Yellow note */
+.yellow-note { background: rgba(210,153,34,0.1); border: 1px solid rgba(210,153,34,0.3); border-radius: 8px; padding: 11px 14px; font-size: 13px; color: var(--yellow); margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+.yellow-swatch { width: 18px; height: 18px; border-radius: 4px; background: #f5c542; flex-shrink: 0; border: 1px solid rgba(245,197,66,0.5); }
+
+/* Week row */
+.week-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.week-row label { font-size: 13px; font-weight: 500; color: var(--text2); white-space: nowrap; }
+
+/* Buttons */
+.btn { padding: 9px 18px; border-radius: 7px; border: none; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; transition: all 0.15s; display: inline-flex; align-items: center; gap: 7px; }
+.btn-primary { background: var(--accent2); color: white; }
+.btn-primary:hover { background: #388bfd; }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-success { background: var(--success); color: #0d1117; }
+.btn-success:hover { background: #56d364; }
+.btn-ghost { background: var(--surface2); color: var(--text2); border: 1px solid var(--border2); }
+.btn-ghost:hover { color: var(--text); border-color: var(--accent); }
+.btn-danger { background: rgba(248,81,73,0.1); color: var(--danger); border: 1px solid rgba(248,81,73,0.3); }
+.btn-danger:hover { background: rgba(248,81,73,0.2); }
+.btn-sm { padding: 6px 13px; font-size: 12px; }
+
+/* Progress */
+.progress-bar { background: var(--surface2); border-radius: 4px; height: 4px; margin-top: 10px; overflow: hidden; display: none; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent2), var(--accent)); border-radius: 4px; transition: width 0.4s; }
+
+/* Meeting cards */
+.meeting-list { display: flex; flex-direction: column; gap: 10px; }
+.meeting-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; transition: border-color 0.15s; }
+.meeting-card:hover { border-color: var(--border2); }
+.meeting-card.pending  { border-left: 3px solid var(--yellow); }
+.meeting-card.complete { border-left: 3px solid var(--success); }
+.meeting-card.skipped  { opacity: 0.4; }
+.meeting-card.onsite-highlight { box-shadow: 0 0 0 1px rgba(251,146,60,0.4); }
+.onsite-badge { display:inline-flex; align-items:center; gap:4px; background:rgba(251,146,60,0.15); border:1px solid rgba(251,146,60,0.4); color:#fb923c; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:600; }
+.success-badge { display:inline-flex; align-items:center; gap:4px; background:rgba(250,204,21,0.15); border:1px solid rgba(250,204,21,0.4); color:#fbbf24; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:600; }
+.cisco-badge { display:inline-flex; align-items:center; gap:3px; background:rgba(88,166,255,0.12); border:1px solid rgba(88,166,255,0.3); color:var(--accent); padding:2px 7px; border-radius:20px; font-size:10px; font-weight:600; }
+.mc-header { display: grid; grid-template-columns: 58px 1fr auto; gap: 14px; align-items: center; padding: 14px 18px; cursor: pointer; }
+.mc-time { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 5px; text-align: center; }
+.mc-time-val { font-size: 12px; font-weight: 600; color: var(--accent); }
+.mc-time-dur { font-size: 10px; color: var(--text3); margin-top: 2px; }
+.mc-company { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+.mc-meeting { font-size: 12px; color: var(--text2); margin-bottom: 4px; }
+.mc-meta { display: flex; gap: 10px; font-size: 11px; color: var(--text3); flex-wrap: wrap; align-items: center; }
+.mc-meta-item { display: flex; align-items: center; gap: 4px; }
+.pill { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.pill-pending  { background: rgba(210,153,34,0.15); color: var(--yellow);   border: 1px solid rgba(210,153,34,0.3); }
+.pill-complete { background: rgba(63,185,80,0.15);  color: var(--success);  border: 1px solid rgba(63,185,80,0.3); }
+.pill-skipped  { background: rgba(72,79,88,0.3);    color: var(--text3);    border: 1px solid var(--border); }
+
+/* Form */
+.mc-form { display: none; padding: 0 20px 20px; border-top: 1px solid var(--border); }
+.mc-form.open { display: block; }
+.form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 18px; }
+.form-group { display: flex; flex-direction: column; gap: 7px; }
+.form-group.full { grid-column: 1 / -1; }
+.form-label { font-size: 11px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; }
+.form-input {
+  background: var(--surface2); border: 1px solid var(--border2); border-radius: 7px;
+  color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px;
+  padding: 9px 13px; outline: none; transition: border-color 0.15s; width: 100%;
+}
+.form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(88,166,255,0.1); }
+.form-input option { background: var(--surface2); }
+textarea.form-input { resize: vertical; min-height: 80px; line-height: 1.5; }
+.chk-row { display: flex; gap: 20px; flex-wrap: wrap; padding: 6px 0; }
+.chk-item { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--text2); cursor: pointer; }
+.chk-item input { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+.form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+
+/* Week filter */
+.filter-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+
+/* Report */
+.report-section { margin-bottom: 24px; }
+.report-label { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+.report-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.report-table th { text-align: left; padding: 9px 12px; font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; border-bottom: 1px solid var(--border); }
+.report-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: top; }
+.report-table tr:last-child td { border-bottom: none; }
+.report-table td:first-child { color: var(--text); font-weight: 500; }
+
+/* Inputs (week row) */
+input[type=text].wk, input[type=date].wk {
+  background: var(--surface2); border: 1px solid var(--border2); border-radius: 7px;
+  color: var(--text); font-family: 'Inter', sans-serif; font-size: 13px;
+  padding: 8px 12px; outline: none;
+}
+input[type=text].wk:focus, input[type=date].wk:focus { border-color: var(--accent); }
+select.wk { background: var(--surface2); border: 1px solid var(--border2); border-radius: 7px; color: var(--text); font-family: 'Inter', sans-serif; font-size: 13px; padding: 8px 12px; outline: none; }
+
+/* Spinner */
+.spinner { width: 16px; height: 16px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Notification */
+.notif { position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 13px 20px; font-size: 13px; font-weight: 500; z-index: 1000; transform: translateY(20px); opacity: 0; transition: all 0.3s; pointer-events: none; max-width: 340px; }
+.notif.show { transform: translateY(0); opacity: 1; }
+.notif.success { border-color: rgba(63,185,80,0.5); color: var(--success); }
+.notif.error { border-color: rgba(248,81,73,0.5); color: var(--danger); }
+
+/* Empty */
+.empty { text-align: center; padding: 56px 24px; }
+.empty-icon { font-size: 40px; margin-bottom: 14px; }
+.empty-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 8px; color: var(--text); }
+.empty-sub { font-size: 13px; color: var(--text2); margin-bottom: 20px; line-height: 1.6; max-width: 380px; margin-left: auto; margin-right: auto; }
+
+/* Settings */
+.apikey-row { display: flex; gap: 10px; margin-bottom: 10px; }
+.apikey-input { flex: 1; background: var(--surface2); border: 1px solid var(--border2); border-radius: 7px; color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px; padding: 10px 13px; outline: none; }
+.apikey-input:focus { border-color: var(--accent); }
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="notif" id="notif"></div>
+
+<div class="app">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-box">⚡</div>
+      <div>
+        <div class="logo-text">SD&S Tracker</div>
+        <div class="logo-sub">Quarterly Engagements</div>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-item active" onclick="showScreen('import')"   id="nav-import">  <span class="nav-icon">📸</span> Import Week</div>
+      <div class="nav-item"        onclick="showScreen('meetings')" id="nav-meetings"><span class="nav-icon">📅</span> All Meetings</div>
+      <div class="nav-item"        onclick="showScreen('report')"   id="nav-report">  <span class="nav-icon">📊</span> Q Report</div>
+      <div class="nav-item"        onclick="showScreen('settings')" id="nav-settings"><span class="nav-icon">⚙</span> Settings</div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="sidebar-stat">Total meetings <span id="sb-total">0</span></div>
+      <div class="sidebar-stat">Complete <span id="sb-complete">0</span></div>
+      <div class="sidebar-stat">Pending <span id="sb-pending">0</span></div>
+      <div class="sidebar-stat">Hours logged <span id="sb-hours">0</span></div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- ── IMPORT ── -->
+    <div class="screen active" id="screen-import">
+      <div class="page-header">
+        <div class="page-title">Import Week</div>
+        <div class="page-sub">Screenshot your Outlook calendar and paste it — Claude extracts your yellow customer meetings automatically</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">How to capture</div>
+        <div style="font-size:13px; color:var(--text2); line-height:2;">
+          1. Open Outlook desktop or web calendar in <strong style="color:var(--text)">Work Week</strong> view<br>
+          2. Press <strong style="color:var(--accent)">Windows + Shift + S</strong> → drag to select the whole calendar grid<br>
+          3. Click anywhere in the paste zone below and press <strong style="color:var(--accent)">Ctrl+V</strong><br>
+          4. Hit <strong style="color:var(--text)">Analyze with Claude</strong>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Paste Your Calendar Screenshot</div>
+
+        <div class="week-row">
+          <label>Week of:</label>
+          <input type="date" id="weekDate" class="wk" onchange="autoWeekLabel()">
+          <input type="text" id="weekLabel" class="wk" placeholder="Week of May 4" style="min-width:180px;">
+        </div>
+
+        <div class="yellow-note">
+          <div class="yellow-swatch"></div>
+          <span>Claude will import <strong>all yellow meetings</strong> (any shade — bright, pale, golden, tentative striped) plus any meeting tagged <strong>[EXTERNAL]</strong> as a safety net.</span>
+        </div>
+
+        <!-- Single paste zone -->
+        <div class="paste-zone" id="pasteZone" tabindex="0"
+          ondragover="onDragOver(event)" ondragleave="onDragLeave()" ondrop="onDrop(event)">
+          <input type="file" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer;z-index:1;" onchange="onFileSelect(event)">
+          <div class="pz-placeholder">
+            <div class="pz-icon">📸</div>
+            <div class="pz-main">Paste your screenshot here</div>
+            <div class="pz-sub">Take a screenshot of your Outlook work week, then click here and press Ctrl+V — or drag and drop the image file</div>
+            <div class="pz-kbd">Ctrl + V</div>
+            <div class="pz-or">or drag & drop · or click to browse</div>
+          </div>
+          <button class="pz-clear" onclick="clearZone(event)">✕ Clear</button>
+          <div class="pz-loaded">✓ Screenshot loaded</div>
+        </div>
+
+        <div style="font-size:12px; color:var(--text3); margin-bottom:14px; text-align:center;">
+          💡 <strong style="color:var(--text2);">Ctrl+V anywhere on this page</strong> pastes into the zone automatically — no need to click first
+        </div>
+
+        <div id="analyzeStatus" style="font-size:13px; color:var(--text2); margin-bottom:8px; min-height:18px; font-weight:500;"></div>
+        <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+
+        <div style="display:flex; gap:10px; align-items:center; margin-top:16px;">
+          <button class="btn btn-primary" onclick="analyze()" id="analyzeBtn">
+            <span class="spinner" id="analyzeSpinner" style="display:none;"></span>
+            ⚡ Analyze with Claude
+          </button>
+          <button class="btn btn-ghost" onclick="clearImport()">Clear</button>
+          <span style="font-size:12px; color:var(--text3);" id="imgStatus"></span>
+        </div>
+      </div>
+
+      <!-- Extracted preview -->
+      <div id="extractedSection" style="display:none;">
+        <div class="card">
+          <div class="card-title">Extracted Meetings <span id="extractedCount" style="font-size:13px; color:var(--text2); font-weight:400; margin-left:8px;"></span></div>
+          <div id="extractedList" class="meeting-list"></div>
+          <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px; padding-top:16px; border-top:1px solid var(--border);">
+            <button class="btn btn-ghost" onclick="document.getElementById('extractedSection').style.display='none'">Cancel</button>
+            <button class="btn btn-success" onclick="importExtracted()">✓ Import These Meetings</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── MEETINGS ── -->
+    <div class="screen" id="screen-meetings">
+      <div class="page-header">
+        <div class="page-title">All Meetings</div>
+        <div class="page-sub">Expand any card to complete engagement details — company name is shown as the main title</div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-val c-accent"  id="st-total">0</div><div class="stat-lbl">Total</div></div>
+        <div class="stat-card"><div class="stat-val c-success" id="st-complete">0</div><div class="stat-lbl">Complete</div></div>
+        <div class="stat-card"><div class="stat-val c-warning" id="st-pending">0</div><div class="stat-lbl">Pending</div></div>
+        <div class="stat-card"><div class="stat-val"           id="st-hours">0</div><div class="stat-lbl">Hours</div></div>
+      </div>
+      <div class="filter-row">
+        <span style="font-size:13px; font-weight:500; color:var(--text2);">Week:</span>
+        <select class="wk" id="weekFilter" onchange="renderMeetings()"><option value="all">All weeks</option></select>
+        <button class="btn btn-ghost btn-sm" onclick="exportCSV()">↓ Export CSV</button>
+        <button class="btn btn-danger btn-sm" onclick="clearAllData()">🗑 Clear All</button>
+      </div>
+      <div id="meetingsList" class="meeting-list">
+        <div class="empty">
+          <div class="empty-icon">📅</div>
+          <div class="empty-title">No meetings yet</div>
+          <div class="empty-sub">Go to Import Week, paste your Outlook calendar screenshot, and Claude will extract your yellow customer meetings</div>
+          <button class="btn btn-primary" onclick="showScreen('import')">Import Week →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── REPORT ── -->
+    <div class="screen" id="screen-report">
+      <div class="page-header">
+        <div class="page-title">Quarterly Report</div>
+        <div class="page-sub">Summary of completed engagements — ready for your QBR</div>
+      </div>
+      <div style="display:flex; gap:10px; margin-bottom:24px; flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="generateReport()">⚡ Generate AI Summary</button>
+        <button class="btn btn-ghost"   onclick="exportCSV()">↓ Export CSV</button>
+        <button class="btn btn-ghost"   onclick="copyReport()">📋 Copy Text</button>
+      </div>
+      <div id="reportContent">
+        <div class="empty"><div class="empty-icon">📊</div><div class="empty-title">No completed meetings yet</div><div class="empty-sub">Complete meetings in All Meetings first, then generate your report here</div></div>
+      </div>
+    </div>
+
+    <!-- ── SETTINGS ── -->
+    <div class="screen" id="screen-settings">
+      <div class="page-header"><div class="page-title">Settings</div></div>
+      <div class="card">
+        <div class="card-title">Claude API Key</div>
+        <div style="font-size:13px; color:var(--text2); margin-bottom:14px; line-height:1.7;">Required for image analysis and AI field suggestions.<br>Get yours free at <strong style="color:var(--accent)">console.anthropic.com → API Keys</strong></div>
+        <div class="apikey-row">
+          <input type="password" class="apikey-input" id="apiKeyInput" placeholder="sk-ant-api03-...">
+          <button class="btn btn-primary" onclick="saveApiKey()">Save</button>
+        </div>
+        <div id="apiKeyStatus" style="font-size:13px; color:var(--success); display:none; margin-top:6px; font-weight:500;">✓ API key saved</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Data Management</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn btn-ghost" onclick="exportCSV()">↓ Export CSV</button>
+          <button class="btn btn-ghost" onclick="exportJSON()">↓ JSON Backup</button>
+          <button class="btn btn-ghost" onclick="importJSON()">↑ Import Backup</button>
+          <button class="btn btn-danger" onclick="clearAllData()">🗑 Clear All Data</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+'use strict';
+
+const CATEGORIES = [
+  'Non-Partner Activity (i.e., IM internal or vendor-related work)',
+  'Partner Development Activity (i.e., Interaction with partner to facilitate & drive their growth)',
+  'Solution Design Activity (i.e., Interaction with partner about a specific end-user opportunity)'
+];
+const ENG_TYPES = ['Deal','Oppty ID/Discovery','Recruit','Relationship','Roadmap','Business Review','Training'];
+const AUDIENCES = ['Reseller Exec/Management','Reseller Sales','Reseller Tech'];
+const METHODS   = ['Onsite','Virtual - Teams','Conference Call','Email','Phone','Webinar'];
+
+let meetings  = [];
+let apiKey    = '';
+let extracted = [];
+let imgData   = null; // base64 string without prefix
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  loadData();
+  apiKey = localStorage.getItem('sds_apikey') || '';
+  if (apiKey) document.getElementById('apiKeyInput').value = apiKey;
+  autoWeekLabel();
+  updateSidebar(); updateStats();
+
+  // Global Ctrl+V listener
+  document.addEventListener('paste', e => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        loadFile(item.getAsFile());
+        showNotif('✓ Screenshot pasted successfully', 'success');
+        return;
+      }
+    }
+  });
+
+  if (!apiKey) showNotif('Add your Claude API key in Settings to get started', 'error');
+});
+
+function autoWeekLabel() {
+  const dateInput  = document.getElementById('weekDate');
+  const labelInput = document.getElementById('weekLabel');
+  const base = dateInput.value ? new Date(dateInput.value + 'T12:00:00') : new Date();
+  const monday = new Date(base);
+  monday.setDate(base.getDate() - base.getDay() + (base.getDay() === 0 ? -6 : 1));
+  dateInput.value  = monday.toISOString().split('T')[0];
+  labelInput.value = 'Week of ' + monday.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  if (name === 'meetings') renderMeetings();
+  if (name === 'report')   renderReportTable();
+}
+
+// ── Storage ───────────────────────────────────────────────────────────────────
+function saveData() { localStorage.setItem('sds_meetings', JSON.stringify(meetings)); updateSidebar(); updateStats(); updateWeekFilter(); }
+function loadData() { try { meetings = JSON.parse(localStorage.getItem('sds_meetings') || '[]'); } catch(e) { meetings = []; } updateWeekFilter(); }
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key) return; apiKey = key; localStorage.setItem('sds_apikey', key);
+  const s = document.getElementById('apiKeyStatus'); s.style.display = 'block';
+  setTimeout(() => s.style.display = 'none', 2500);
+}
+
+// ── Image Handling ────────────────────────────────────────────────────────────
+function onDragOver(e) { e.preventDefault(); document.getElementById('pasteZone').classList.add('dragover'); }
+function onDragLeave()  { document.getElementById('pasteZone').classList.remove('dragover'); }
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('pasteZone').classList.remove('dragover');
+  const file = [...e.dataTransfer.files].find(f => f.type.startsWith('image/'));
+  if (file) loadFile(file);
+}
+function onFileSelect(e) { if (e.target.files[0]) loadFile(e.target.files[0]); }
+
+function loadFile(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const full = ev.target.result;
+    imgData = full.split(',')[1];
+    const zone = document.getElementById('pasteZone');
+    zone.classList.add('has-image');
+    const old = zone.querySelector('img'); if (old) old.remove();
+    const img = document.createElement('img'); img.src = full;
+    zone.insertBefore(img, zone.firstChild);
+    document.getElementById('imgStatus').textContent = '✓ ' + (file.name || 'screenshot') + ' loaded';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearZone(e) {
+  if (e) e.stopPropagation();
+  imgData = null;
+  const zone = document.getElementById('pasteZone');
+  zone.classList.remove('has-image');
+  const img = zone.querySelector('img'); if (img) img.remove();
+  const inp = zone.querySelector('input[type=file]'); if (inp) inp.value = '';
+  document.getElementById('imgStatus').textContent = '';
+}
+
+function clearImport() {
+  clearZone(null);
+  document.getElementById('extractedSection').style.display = 'none';
+  setStatus(''); setProgress(0);
+}
+
+// ── Analyze ───────────────────────────────────────────────────────────────────
+async function analyze() {
+  if (!imgData)  { showNotif('Please paste or drop a screenshot first', 'error'); return; }
+  if (!apiKey)   { showNotif('Add your Claude API key in Settings first', 'error'); showScreen('settings'); return; }
+
+  const weekLabel = document.getElementById('weekLabel').value.trim() || 'This week';
+  const weekDate  = document.getElementById('weekDate').value;
+
+  // Build Mon-Fri date map
+  let weekDates = {};
+  if (weekDate) {
+    const base = new Date(weekDate + 'T12:00:00');
+    const mon = new Date(base); mon.setDate(base.getDate() - base.getDay() + 1);
+    ['Monday','Tuesday','Wednesday','Thursday','Friday'].forEach((day, i) => {
+      const d = new Date(mon); d.setDate(mon.getDate() + i);
+      weekDates[day] = d.toISOString().split('T')[0];
+    });
+  }
+
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
+  document.getElementById('analyzeSpinner').style.display = 'inline-block';
+  setStatus('Reading your calendar with Claude Vision...');
+  setProgress(20);
+
+  const dateHint = Object.keys(weekDates).length
+    ? `Date mapping:\n${Object.entries(weekDates).map(([d,dt]) => `  ${d} = ${dt}`).join('\n')}`
+    : `Today is ${new Date().toISOString().split('T')[0]}`;
+
+  const prompt = `You are analyzing an Outlook calendar screenshot for the week of: ${weekLabel}
+${dateHint}
+
+TASK: Extract customer/partner meetings to import into a sales engagement tracker.
+
+WHICH MEETINGS TO INCLUDE:
+1. ANY meeting with a YELLOW background — this is the primary rule. Yellow includes ALL shades:
+   - Bright golden yellow (like CTSI DPV)
+   - Medium yellow (like PVI Discussion)
+   - Pale/light yellow (like Alykas meetings)
+   - Striped/hatched yellow pattern (tentative meetings)
+   - Cream or warm white-yellow tones
+   When in doubt about whether something is yellow — INCLUDE IT.
+2. ANY meeting with [EXTERNAL] in the title — include these regardless of color as a safety net.
+
+WHICH MEETINGS TO SKIP:
+- Meetings with clearly NON-yellow backgrounds: blue, teal, green, pink, red, salmon, grey, purple, white
+- Meetings with "Canceled:" prefix
+- All-day banner events (PTO, holidays, etc.)
+- Pure internal Ingram meetings with no external company
+
+For each included meeting, return this JSON:
+{
+  "title": "clean title — remove [EXTERNAL], FW:, RE:, Canceled:, and any URLs or Webex/Teams links",
+  "date": "YYYY-MM-DD from the date mapping above based on which day column it appears in",
+  "dayOfWeek": "Monday|Tuesday|Wednesday|Thursday|Friday",
+  "startTime": "9:00 AM",
+  "endTime": "10:00 AM",
+  "duration": 1.0,
+  "company": "the EXTERNAL customer or partner company name — extract from the meeting title. Examples: 'CTSI DPV' → 'CTSI', 'PVI Discussion' → 'PVI', 'Alykas Cisco 360 call' → 'Alykas', 'Great news SMB and Mid-Market Business' → use title as company. NEVER use 'Ingram', 'Vurpillat', 'Curt', or 'IM' as the company.",
+  "contact": "person's name if visible, not Curt Vurpillat",
+  "attendees": 2,
+  "contactMethod": "Virtual - Teams|Onsite|Conference Call|Phone|Webinar|Email",
+  "notes": "any visible location, description, or attendee info"
+}
+
+Return ONLY a valid JSON array. No markdown, no explanation, no extra text.`;
+
+  try {
+    setProgress(45);
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: 'image/png', data: imgData } },
+            { type: 'text', text: prompt }
+          ]
+        }]
+      })
+    });
+
+    setProgress(80);
+    if (!res.ok) { const err = await res.json(); throw new Error(err.error?.message || 'API error ' + res.status); }
+
+    const data = await res.json();
+    const raw  = data.content[0].text.trim().replace(/^```json\s*/,'').replace(/\s*```$/,'').trim();
+    extracted  = JSON.parse(raw);
+    extracted.forEach(m => m.weekLabel = weekLabel);
+
+    setProgress(100);
+    setStatus(`Found ${extracted.length} meeting${extracted.length !== 1 ? 's' : ''}`);
+    showExtracted();
+
+  } catch(e) {
+    showNotif('Analysis failed: ' + e.message, 'error');
+    setStatus('Error: ' + e.message);
+    setProgress(0);
+  } finally {
+    btn.disabled = false;
+    document.getElementById('analyzeSpinner').style.display = 'none';
+  }
+}
+
+function showExtracted() {
+  if (!extracted.length) { showNotif('No yellow or [EXTERNAL] meetings found — try a different screenshot', 'error'); return; }
+  document.getElementById('extractedCount').textContent = `${extracted.length} meeting${extracted.length!==1?'s':''} found`;
+  document.getElementById('extractedList').innerHTML = extracted.map((m,i) => `
+    <div class="meeting-card" style="border-left: 3px solid var(--yellow);">
+      <div class="mc-header" style="cursor:default;">
+        <div class="mc-time">
+          <div class="mc-time-val">${m.startTime||'?'}</div>
+          <div class="mc-time-dur">${m.duration||'?'}h</div>
+        </div>
+        <div>
+          <div class="mc-company">${esc(m.company||m.title)}</div>
+          <div class="mc-meeting">${esc(m.title)}</div>
+          <div class="mc-meta">
+            <span class="mc-meta-item">${esc(m.dayOfWeek||'')} ${esc(m.date||'')}</span>
+            <span class="mc-meta-item">👥 ${m.attendees||1}</span>
+            <span class="mc-meta-item">${esc(m.contactMethod||'')}</span>
+          </div>
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;cursor:pointer;flex-shrink:0;color:var(--text2);">
+          <input type="checkbox" checked id="inc-${i}" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;"> Include
+        </label>
+      </div>
+    </div>`).join('');
+
+  const sec = document.getElementById('extractedSection');
+  sec.style.display = 'block';
+  sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function importExtracted() {
+  const toImport = extracted.filter((_,i) => {
+    const cb = document.getElementById('inc-'+i); return cb && cb.checked;
+  });
+  toImport.forEach(m => {
+    meetings.push({
+      id: 'mtg_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+      title: m.title||'Untitled', date: m.date||new Date().toISOString().split('T')[0],
+      dayOfWeek: m.dayOfWeek||'', startTime: m.startTime||'', endTime: m.endTime||'',
+      duration: m.duration||1, company: m.company||'', contact: m.contact||'',
+      attendees: m.attendees||1, contactMethod: m.contactMethod||'Virtual - Teams',
+      notes: m.notes||'', weekLabel: m.weekLabel||'',
+      category:'', engagementType:'', audience:'', vendor:'Cisco', numVARs:1,
+      demo:false, services:false, opportunity:false, exclude:false,
+      successStory:false, c360:false, driveFor5:false, runTo1:false,
+      titleField:'', description:'', status:'pending'
+    });
+  });
+  saveData();
+  document.getElementById('extractedSection').style.display = 'none';
+  clearImport(); extracted = [];
+  showNotif(`✓ Imported ${toImport.length} meeting${toImport.length!==1?'s':''}`, 'success');
+  showScreen('meetings');
+}
+
+// ── Render Meetings ───────────────────────────────────────────────────────────
+function renderMeetings() {
+  const list   = document.getElementById('meetingsList');
+  const filter = document.getElementById('weekFilter')?.value || 'all';
+  let filtered = filter === 'all' ? meetings : meetings.filter(m => m.weekLabel === filter);
+  filtered.sort((a,b) => (a.date+a.startTime).localeCompare(b.date+b.startTime));
+
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">📅</div><div class="empty-title">No meetings ${filter!=='all'?'for this week':'yet'}</div><div class="empty-sub">${filter!=='all'?'Try a different week filter':'Go to Import Week and paste your Outlook calendar screenshot'}</div><button class="btn btn-primary" onclick="showScreen('import')">Import Week →</button></div>`;
+    return;
+  }
+  list.innerHTML = filtered.map(m => buildCard(m)).join('');
+}
+
+function buildCard(m) {
+  const sc = m.status||'pending';
+  const pillClass = sc==='complete'?'pill-complete':sc==='skipped'?'pill-skipped':'pill-pending';
+  const pillText  = sc==='complete'?'✓ Complete':sc==='skipped'?'Skipped':'⚠ Pending';
+  const opt = (arr,val) => ['<option value="">— Select —</option>',...arr.map(v=>`<option value="${esc(v)}" ${v===val?'selected':''}>${esc(v)}</option>`)].join('');
+  const isOnsite = m.contactMethod === 'Onsite';
+
+  // Build badge strip for card header
+  const badges = [];
+  if (isOnsite)      badges.push(`<span class="onsite-badge">🏢 Onsite</span>`);
+  if (m.successStory)badges.push(`<span class="success-badge">⭐ Success Story</span>`);
+  if (m.c360)        badges.push(`<span class="cisco-badge">C360</span>`);
+  if (m.driveFor5)   badges.push(`<span class="cisco-badge">DriveFor5</span>`);
+  if (m.runTo1)      badges.push(`<span class="cisco-badge">RunTo1</span>`);
+
+  return `
+  <div class="meeting-card ${sc}${isOnsite?' onsite-highlight':''}" id="card-${m.id}">
+    <div class="mc-header" onclick="toggleCard('${m.id}')">
+      <div class="mc-time">
+        <div class="mc-time-val">${m.startTime||'?'}</div>
+        <div class="mc-time-dur">${m.duration||'?'}h</div>
+      </div>
+      <div style="min-width:0;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:2px;">
+          <div class="mc-company">${esc(m.company||m.title)}</div>
+          ${badges.join('')}
+        </div>
+        <div class="mc-meeting">${esc(m.title)}</div>
+        <div class="mc-meta">
+          <span class="mc-meta-item">${esc(m.dayOfWeek||'')} ${esc(m.date||'')}</span>
+          <span class="mc-meta-item">👥 ${m.attendees||1}</span>
+          <span class="mc-meta-item">${esc(m.contactMethod||'')}</span>
+          ${m.weekLabel?`<span class="mc-meta-item" style="color:var(--text3);">${esc(m.weekLabel)}</span>`:''}
+        </div>
+      </div>
+      <div style="flex-shrink:0;"><span class="pill ${pillClass}">${pillText}</span></div>
+    </div>
+    <div class="mc-form" id="form-${m.id}">
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Date</label><input type="date" class="form-input" value="${m.date||''}" onchange="updateField('${m.id}','date',this.value)"></div>
+        <div class="form-group"><label class="form-label">Duration (hrs)</label><input type="number" class="form-input" step="0.5" min="0.5" value="${m.duration||1}" onchange="updateField('${m.id}','duration',parseFloat(this.value))"></div>
+        <div class="form-group"><label class="form-label">Attendees</label><input type="number" class="form-input" min="1" value="${m.attendees||1}" onchange="updateField('${m.id}','attendees',parseInt(this.value))"></div>
+        <div class="form-group"><label class="form-label">Company</label><input type="text" class="form-input" value="${esc(m.company||'')}" onchange="updateField('${m.id}','company',this.value)"></div>
+        <div class="form-group"><label class="form-label">Contact</label><input type="text" class="form-input" value="${esc(m.contact||'')}" onchange="updateField('${m.id}','contact',this.value)"></div>
+        <div class="form-group"><label class="form-label">Contact Method</label><select class="form-input" onchange="updateField('${m.id}','contactMethod',this.value);renderMeetings();">${opt(METHODS,m.contactMethod)}</select></div>
+        <div class="form-group full"><label class="form-label">Category</label><select class="form-input" onchange="updateField('${m.id}','category',this.value)">${opt(CATEGORIES,m.category)}</select></div>
+        <div class="form-group"><label class="form-label">Engagement Type</label><select class="form-input" onchange="updateField('${m.id}','engagementType',this.value)">${opt(ENG_TYPES,m.engagementType)}</select></div>
+        <div class="form-group"><label class="form-label">Audience</label><select class="form-input" onchange="updateField('${m.id}','audience',this.value)">${opt(AUDIENCES,m.audience)}</select></div>
+        <div class="form-group"><label class="form-label">Vendor</label><input type="text" class="form-input" value="Cisco" readonly style="opacity:0.6;color:var(--accent);"></div>
+
+        <div class="form-group full"><label class="form-label">Engagement Flags</label>
+          <div class="chk-row">
+            <label class="chk-item"><input type="checkbox" ${m.exclude?'checked':''} onchange="updateField('${m.id}','exclude',this.checked)"> Exclude from Impact</label>
+            <label class="chk-item"><input type="checkbox" ${m.demo?'checked':''} onchange="updateField('${m.id}','demo',this.checked)"> Demo Delivered</label>
+            <label class="chk-item"><input type="checkbox" ${m.services?'checked':''} onchange="updateField('${m.id}','services',this.checked)"> Services Discussed</label>
+            <label class="chk-item"><input type="checkbox" ${m.opportunity?'checked':''} onchange="updateField('${m.id}','opportunity',this.checked)"> Create Opportunity</label>
+          </div>
+        </div>
+
+        <div class="form-group full"><label class="form-label" style="color:#fbbf24;">Cisco Programs</label>
+          <div class="chk-row">
+            <label class="chk-item"><input type="checkbox" ${m.c360?'checked':''} onchange="updateField('${m.id}','c360',this.checked)"> C360</label>
+            <label class="chk-item"><input type="checkbox" ${m.driveFor5?'checked':''} onchange="updateField('${m.id}','driveFor5',this.checked)"> DriveFor5</label>
+            <label class="chk-item"><input type="checkbox" ${m.runTo1?'checked':''} onchange="updateField('${m.id}','runTo1',this.checked)"> RunTo1</label>
+          </div>
+        </div>
+
+        <div class="form-group full">
+          <label class="chk-item" style="gap:10px; cursor:pointer;">
+            <input type="checkbox" ${m.successStory?'checked':''} onchange="updateField('${m.id}','successStory',this.checked);renderMeetings();" style="width:18px;height:18px;accent-color:#fbbf24;cursor:pointer;">
+            <span style="font-size:14px; font-weight:600; color:#fbbf24;">⭐ Mark as Success Story</span>
+            <span style="font-size:12px; color:var(--text3); font-weight:400;">— will appear in Q Report success story section</span>
+          </label>
+        </div>
+
+        <div class="form-group full"><label class="form-label">Title</label><input type="text" class="form-input" value="${esc(m.titleField||autoTitle(m))}" onchange="updateField('${m.id}','titleField',this.value)" id="tf-${m.id}"></div>
+        <div class="form-group full"><label class="form-label">Description / Notes</label><textarea class="form-input" onchange="updateField('${m.id}','description',this.value)">${esc(m.description||m.notes||'')}</textarea></div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-ghost btn-sm" onclick="skipMeeting('${m.id}')">Skip</button>
+        <button class="btn btn-ghost btn-sm" onclick="aiSuggest('${m.id}')">⚡ AI Suggest</button>
+        <button class="btn btn-success btn-sm" onclick="completeMeeting('${m.id}')">✓ Mark Complete</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleCard(id) { document.getElementById('form-'+id)?.classList.toggle('open'); }
+
+function updateField(id, field, value) {
+  const m = meetings.find(x=>x.id===id); if (!m) return;
+  m[field] = value;
+  if (['date','engagementType','company'].includes(field)) {
+    const tf = document.getElementById('tf-'+id); if (tf && !m.titleField) tf.value = autoTitle(m);
+  }
+  saveData();
+}
+
+function autoTitle(m) {
+  const d = m.date ? new Date(m.date+'T12:00:00').toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'numeric'}) : '';
+  return [d, m.engagementType, m.company].filter(Boolean).join(' - ');
+}
+
+function completeMeeting(id) {
+  const m = meetings.find(x=>x.id===id); if (!m) return;
+  if (!m.category||!m.engagementType||!m.audience) { showNotif('Please fill in Category, Engagement Type, and Audience first','error'); return; }
+  if (!m.titleField) m.titleField = autoTitle(m);
+  m.status = 'complete'; saveData(); renderMeetings(); showNotif('✓ Meeting marked complete','success');
+}
+
+function skipMeeting(id) {
+  const m = meetings.find(x=>x.id===id); if (!m) return;
+  m.status = 'skipped'; saveData(); renderMeetings();
+}
+
+async function aiSuggest(id) {
+  if (!apiKey) { showNotif('Add API key in Settings','error'); return; }
+  const m = meetings.find(x=>x.id===id); if (!m) return;
+  showNotif('⚡ Claude is analyzing this meeting...','success');
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:700,messages:[{role:'user',content:`Suggest engagement tracker fields for this Cisco reseller meeting at Ingram Micro SD&S:
+Title: ${m.title}
+Company: ${m.company}
+Duration: ${m.duration}h
+Attendees: ${m.attendees}
+Contact Method: ${m.contactMethod}
+Notes: ${m.notes||'none'}
+
+Return ONLY valid JSON (no markdown):
+{"category":"${CATEGORIES.join('|')}","engagementType":"${ENG_TYPES.join('|')}","audience":"${AUDIENCES.join('|')}","demo":false,"services":false,"opportunity":false,"description":"2-3 sentence description of likely meeting purpose and outcome"}`}]})
+    });
+    const data = await res.json();
+    const suggested = JSON.parse(data.content[0].text.trim().replace(/^```json\s*/,'').replace(/\s*```$/,''));
+    Object.assign(m, suggested);
+    if (!m.titleField) m.titleField = autoTitle(m);
+    saveData(); renderMeetings();
+    setTimeout(()=>{ const f=document.getElementById('form-'+id); if(f) f.classList.add('open'); }, 100);
+    showNotif('⚡ Fields updated by Claude AI','success');
+  } catch(e) { showNotif('AI suggest failed: '+e.message,'error'); }
+}
+
+// ── Report ────────────────────────────────────────────────────────────────────
+function renderReportTable() {
+  const done = meetings.filter(m=>m.status==='complete');
+  const el = document.getElementById('reportContent');
+  if (!done.length) { el.innerHTML='<div class="empty"><div class="empty-icon">📊</div><div class="empty-title">No completed meetings</div><div class="empty-sub">Mark meetings as complete in All Meetings, then your report will appear here</div></div>'; return; }
+
+  const totalHours = done.reduce((s,m)=>s+(parseFloat(m.duration)||0),0);
+  const byWeek={}, byType={}, byComp={};
+  const successStories = done.filter(m=>m.successStory);
+  const onsiteMeetings = done.filter(m=>m.contactMethod==='Onsite');
+  const c360 = done.filter(m=>m.c360);
+  const driveFor5 = done.filter(m=>m.driveFor5);
+  const runTo1 = done.filter(m=>m.runTo1);
+  done.forEach(m => {
+    const w=m.weekLabel||'Other'; if(!byWeek[w]) byWeek[w]=[]; byWeek[w].push(m);
+    byType[m.engagementType]=(byType[m.engagementType]||0)+1;
+    if(m.company) byComp[m.company]=(byComp[m.company]||0)+1;
+  });
+
+  let html=`<div class="stats-grid" style="margin-bottom:24px;">
+    <div class="stat-card"><div class="stat-val c-accent">${done.length}</div><div class="stat-lbl">Engagements</div></div>
+    <div class="stat-card"><div class="stat-val c-success">${totalHours.toFixed(1)}</div><div class="stat-lbl">Hours</div></div>
+    <div class="stat-card"><div class="stat-val c-warning">${Object.keys(byComp).length}</div><div class="stat-lbl">Customers</div></div>
+    <div class="stat-card"><div class="stat-val">${Object.keys(byWeek).length}</div><div class="stat-lbl">Weeks</div></div>
+  </div>`;
+
+  // ── Success Stories ──────────────────────────────────────────────────────────
+  if (successStories.length) {
+    html += `<div class="report-section">
+      <div class="report-label" style="color:#fbbf24;">⭐ Success Stories (${successStories.length})</div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+      ${successStories.map(m => `
+        <div style="background:rgba(250,204,21,0.06); border:1px solid rgba(250,204,21,0.25); border-radius:8px; padding:14px 16px;">
+          <div style="font-size:15px; font-weight:700; color:var(--text); margin-bottom:4px;">${esc(m.company||m.title)}</div>
+          <div style="font-size:12px; color:var(--text2); margin-bottom:8px;">${esc(m.dayOfWeek||'')} ${esc(m.date||'')} &middot; ${m.duration}h &middot; ${esc(m.engagementType||'')} &middot; ${esc(m.contactMethod||'')}</div>
+          <div style="font-size:13px; color:var(--text2); line-height:1.7;">${esc(m.description||m.notes||'No description — add one in the meeting card.')}</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  // ── Onsite Engagements ───────────────────────────────────────────────────────
+  if (onsiteMeetings.length) {
+    html += `<div class="report-section">
+      <div class="report-label" style="color:#fb923c;">🏢 Onsite Engagements (${onsiteMeetings.length})</div>
+      <table class="report-table"><tr><th>Day</th><th>Customer</th><th>Type</th><th>Hrs</th></tr>
+      ${onsiteMeetings.map(m=>`<tr><td>${m.dayOfWeek||''} ${m.date||''}</td><td style="font-weight:600;">${esc(m.company||'')}</td><td>${esc(m.engagementType||'')}</td><td>${m.duration}</td></tr>`).join('')}
+      </table>
+    </div>`;
+  }
+
+  // ── Cisco Programs ───────────────────────────────────────────────────────────
+  if (c360.length || driveFor5.length || runTo1.length) {
+    html += `<div class="report-section">
+      <div class="report-label" style="color:var(--accent);">Cisco Program Engagements</div>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:12px;">
+        <div style="background:rgba(88,166,255,0.08); border:1px solid rgba(88,166,255,0.2); border-radius:8px; padding:14px; text-align:center;">
+          <div style="font-size:24px; font-weight:800; color:var(--accent);">${c360.length}</div>
+          <div style="font-size:11px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:1px; margin-top:4px;">C360</div>
+        </div>
+        <div style="background:rgba(88,166,255,0.08); border:1px solid rgba(88,166,255,0.2); border-radius:8px; padding:14px; text-align:center;">
+          <div style="font-size:24px; font-weight:800; color:var(--accent);">${driveFor5.length}</div>
+          <div style="font-size:11px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:1px; margin-top:4px;">DriveFor5</div>
+        </div>
+        <div style="background:rgba(88,166,255,0.08); border:1px solid rgba(88,166,255,0.2); border-radius:8px; padding:14px; text-align:center;">
+          <div style="font-size:24px; font-weight:800; color:var(--accent);">${runTo1.length}</div>
+          <div style="font-size:11px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:1px; margin-top:4px;">RunTo1</div>
+        </div>
+      </div>
+      ${[...new Set([...c360,...driveFor5,...runTo1].map(m=>m.id))].map(id => {
+        const m = done.find(x=>x.id===id);
+        if (!m) return '';
+        const tags = [m.c360?'C360':'', m.driveFor5?'DriveFor5':'', m.runTo1?'RunTo1':''].filter(Boolean);
+        return `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px;">
+          <span style="font-weight:600; color:var(--text);">${esc(m.company||m.title)}</span>
+          <span style="color:var(--text2);">${m.dayOfWeek||''} ${m.date||''}</span>
+          <span style="display:flex; gap:5px;">${tags.map(t=>`<span class="cisco-badge">${t}</span>`).join('')}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  html+=`<div class="report-section"><div class="report-label">By Engagement Type</div><table class="report-table"><tr><th>Type</th><th>Count</th><th>%</th></tr>
+  ${Object.entries(byType).sort((a,b)=>b[1]-a[1]).map(([t,c])=>`<tr><td>${t}</td><td>${c}</td><td>${Math.round(c/done.length*100)}%</td></tr>`).join('')}</table></div>`;
+
+  Object.entries(byWeek).forEach(([week,wm])=>{
+    html+=`<div class="report-section"><div class="report-label">${week} &middot; ${wm.length} meetings &middot; ${wm.reduce((s,m)=>s+(parseFloat(m.duration)||0),0).toFixed(1)}h</div>
+    <table class="report-table"><tr><th>Day</th><th>Date</th><th>Customer</th><th>Meeting</th><th>Type</th><th>Hrs</th><th>Tags</th></tr>
+    ${wm.map(m=>{
+      const tags=[];
+      if(m.contactMethod==='Onsite') tags.push(`<span class="onsite-badge" style="font-size:9px;padding:1px 6px;">Onsite</span>`);
+      if(m.successStory) tags.push(`<span class="success-badge" style="font-size:9px;padding:1px 6px;">⭐</span>`);
+      if(m.c360) tags.push(`<span class="cisco-badge" style="font-size:9px;padding:1px 5px;">C360</span>`);
+      if(m.driveFor5) tags.push(`<span class="cisco-badge" style="font-size:9px;padding:1px 5px;">D5</span>`);
+      if(m.runTo1) tags.push(`<span class="cisco-badge" style="font-size:9px;padding:1px 5px;">R1</span>`);
+      return `<tr><td>${m.dayOfWeek||''}</td><td>${m.date||''}</td><td style="font-weight:600;">${esc(m.company||'')}</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(m.title)}</td><td>${esc(m.engagementType||'')}</td><td>${m.duration}</td><td style="white-space:nowrap;">${tags.join(' ')}</td></tr>`;
+    }).join('')}
+    </table></div>`;
+  });
+  el.innerHTML = html;
+}
+
+async function generateReport() {
+  if (!apiKey) { showNotif('Add API key in Settings','error'); return; }
+  const done = meetings.filter(m=>m.status==='complete');
+  if (!done.length) { showNotif('No completed meetings to summarize','error'); return; }
+  showNotif('⚡ Generating quarterly summary...','success');
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,messages:[{role:'user',content:`Write a professional quarterly engagement summary for a Cisco reseller sales representative at Ingram Micro SD&S.
+
+Engagements data:
+${JSON.stringify(done.map(m=>({date:m.date,dayOfWeek:m.dayOfWeek,company:m.company,type:m.engagementType,duration:m.duration,description:m.description,audience:m.audience})))}
+
+Write 3-4 paragraphs: overall activity and volume, key customer interactions and themes, opportunities identified, notable achievements. Professional tone for a quarterly business review presentation.`}]})
+    });
+    const data = await res.json();
+    renderReportTable();
+    document.getElementById('reportContent').innerHTML =
+      `<div class="card" style="margin-bottom:20px;"><div class="card-title">AI Executive Summary</div><div style="font-size:14px;color:var(--text2);line-height:1.9;white-space:pre-wrap;">${esc(data.content[0].text)}</div></div>` +
+      document.getElementById('reportContent').innerHTML;
+    showNotif('✓ Summary generated','success');
+  } catch(e) { showNotif('Failed: '+e.message,'error'); }
+}
+
+function copyReport() {
+  const done = meetings.filter(m=>m.status==='complete');
+  const totalHours = done.reduce((s,m)=>s+(parseFloat(m.duration)||0),0);
+  const lines = ['SD&S QUARTERLY ENGAGEMENT REPORT','='.repeat(38),
+    `Total: ${done.length} engagements · ${totalHours.toFixed(1)} hours`,'',
+    ...done.map(m=>`${m.dayOfWeek||''} ${m.date||''} | ${m.company||''} | ${m.engagementType||''} | ${m.duration}h | ${m.title}`)];
+  navigator.clipboard.writeText(lines.join('\n')).then(()=>showNotif('✓ Copied to clipboard','success'));
+}
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+function updateSidebar() {
+  document.getElementById('sb-total').textContent    = meetings.length;
+  document.getElementById('sb-complete').textContent = meetings.filter(m=>m.status==='complete').length;
+  document.getElementById('sb-pending').textContent  = meetings.filter(m=>m.status==='pending').length;
+  document.getElementById('sb-hours').textContent    = meetings.filter(m=>m.status==='complete').reduce((s,m)=>s+(parseFloat(m.duration)||0),0).toFixed(1);
+}
+function updateStats() {
+  const done=meetings.filter(m=>m.status==='complete');
+  const pend=meetings.filter(m=>m.status==='pending');
+  const hours=meetings.reduce((s,m)=>s+(parseFloat(m.duration)||0),0);
+  [['st-total',meetings.length],['st-complete',done.length],['st-pending',pend.length],['st-hours',hours.toFixed(1)]]
+    .forEach(([id,v])=>{ const el=document.getElementById(id); if(el) el.textContent=v; });
+}
+function updateWeekFilter() {
+  const sel=document.getElementById('weekFilter'); if(!sel) return;
+  const cur=sel.value;
+  const weeks=[...new Set(meetings.map(m=>m.weekLabel).filter(Boolean))].sort();
+  sel.innerHTML='<option value="all">All weeks</option>'+weeks.map(w=>`<option value="${esc(w)}" ${w===cur?'selected':''}>${w}</option>`).join('');
+}
+function exportCSV() {
+  const rows=meetings.filter(m=>m.status!=='skipped');
+  if(!rows.length){showNotif('Nothing to export','error');return;}
+  const h=['Date','Day','Week','Customer','Contact','Meeting Title','Start','Duration','Category','Engagement Type','Audience','Contact Method','Attendees','VARs','Vendor','Demo','Services','Opportunity','C360','DriveFor5','RunTo1','Success Story','Description','Status'];
+  const csv=[h,...rows.map(m=>[m.date,m.dayOfWeek||'',m.weekLabel||'',m.company||'',m.contact||'',m.title,m.startTime||'',m.duration,m.category||'',m.engagementType||'',m.audience||'',m.contactMethod||'',m.attendees||1,1,'Cisco',m.demo?'Yes':'No',m.services?'Yes':'No',m.opportunity?'Yes':'No',m.c360?'Yes':'No',m.driveFor5?'Yes':'No',m.runTo1?'Yes':'No',m.successStory?'Yes':'No',m.description||'',m.status])].map(r=>r.map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');a.href='data:text/csv,'+encodeURIComponent(csv);a.download=`sds_engagements_${new Date().toISOString().split('T')[0]}.csv`;a.click();
+  showNotif('✓ CSV exported','success');
+}
+function exportJSON() {
+  const a=document.createElement('a');a.href='data:application/json,'+encodeURIComponent(JSON.stringify(meetings,null,2));a.download=`sds_backup_${new Date().toISOString().split('T')[0]}.json`;a.click();
+}
+function importJSON() {
+  const i=document.createElement('input');i.type='file';i.accept='.json';
+  i.onchange=e=>{const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(Array.isArray(d)){meetings=[...meetings,...d];saveData();renderMeetings();showNotif(`✓ Imported ${d.length} meetings`,'success');}}catch(err){showNotif('Invalid JSON file','error');}};r.readAsText(e.target.files[0]);};
+  i.click();
+}
+function clearAllData() {
+  if(!confirm('Clear ALL meeting data? This cannot be undone.'))return;
+  meetings=[];saveData();renderMeetings();showNotif('All data cleared','success');
+}
+function setStatus(msg) { document.getElementById('analyzeStatus').textContent=msg; }
+function setProgress(pct) {
+  const bar=document.getElementById('progressBar'),fill=document.getElementById('progressFill');
+  if(pct===0){bar.style.display='none';fill.style.width='0%';return;}
+  bar.style.display='block';fill.style.width=pct+'%';
+  if(pct>=100)setTimeout(()=>bar.style.display='none',1500);
+}
+function showNotif(msg,type='success') {
+  const el=document.getElementById('notif');el.textContent=msg;el.className='notif show '+type;
+  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),3500);
+}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+</script>
+</body>
+</html>
