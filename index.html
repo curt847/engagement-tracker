@@ -747,13 +747,15 @@ function parseOutlookRows(rows) {
     const get = k => String(row[k] || '').trim();
     const subj = get('Subject'), loc = get('Location'), start = get('Start'),
           end  = get('End'),   req  = get('Required Attendees'),
-          opt  = get('Optional Attendees'), msg = get('Message');
+          opt  = get('Optional Attendees'), msg = get('Message'),
+          recPat = get('Recurrence Pattern'), status = get('Meeting Status');
     if (START_RE.test(start) && subj && subj !== 'nan') {
       cur = { subject:subj, location:loc, startStr:start, endStr:end,
-              req, opt, message:msg, body:[] };
+              req, opt, message:msg, recurrencePattern:recPat, meetingStatus:status, body:[] };
+      if (recPat) cur.body.unshift(recPat);
       blocks.push(cur);
     } else if (cur) {
-      [subj,loc,end,req,opt,msg].forEach(v => { if (v && v !== 'nan') cur.body.push(v); });
+      [subj,loc,end,req,opt,msg,recPat].forEach(v => { if (v && v !== 'nan') cur.body.push(v); });
     }
   });
 
@@ -780,29 +782,47 @@ function parseOutlookRows(rows) {
   // ── Helper: detect recurrence from block ─────────────────────────────────────
   function detectRec(block, startDt) {
     const DAY_IDX = {sunday:0,monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6};
-    const all = [block.location, ...block.body].join(' ');
-    const al  = all.toLowerCase();
+    // Check message separately — often has plain-English recurrence
+    const msgL = block.message.toLowerCase();
+    const all  = [block.location, ...block.body].join(' ');
+    const al   = all.toLowerCase();
 
-    // Structured patterns (most reliable — Outlook puts these in Location of continuation rows)
-    for (const part of [block.location, ...block.body]) {
+    // Check all text sources — body parts first (most structured), then message
+    for (const part of [block.location, ...block.body, block.message]) {
       const p = part.trim(); const pl = p.toLowerCase();
+
       // "the fourth Tuesday of every 1 month(s)..."
       let m = pl.match(/the (first|second|third|fourth|last) (monday|tuesday|wednesday|thursday|friday|saturday|sunday) of every \d+ month/);
       if (m) return { type:'monthly-nth', dow:DAY_IDX[m[2]], nth:ORD[m[1]] };
-      // "Occurs on Tuesday every other week..."
-      m = pl.match(/occurs on (monday|tuesday|wednesday|thursday|friday|saturday|sunday) every other week/);
-      if (m) return { type:'biweekly', dow:DAY_IDX[m[1]] };
+
+      // "Occurs on Friday every 4 weeks..." or "every 2 weeks..."
+      m = pl.match(/occurs on (monday|tuesday|wednesday|thursday|friday|saturday|sunday) every (\d+) weeks?/);
+      if (m) {
+        const weeks = parseInt(m[2]);
+        return { type: weeks === 1 ? 'weekly' : 'nweekly', dow:DAY_IDX[m[1]], interval:weeks };
+      }
+
       // "every Wednesday from..." or "every other Wednesday from..."
       m = pl.match(/^every (other )?(monday|tuesday|wednesday|thursday|friday|saturday|sunday) from/);
-      if (m) return { type: m[1] ? 'biweekly' : 'weekly', dow:DAY_IDX[m[2]] };
+      if (m) return { type: m[1] ? 'biweekly' : 'weekly', dow:DAY_IDX[m[2]], interval: m[1]?2:1 };
+
+      // "Occurs on Tuesday every other week..."
+      m = pl.match(/occurs on (monday|tuesday|wednesday|thursday|friday|saturday|sunday) every other week/);
+      if (m) return { type:'biweekly', dow:DAY_IDX[m[1]], interval:2 };
+
+      // "first Monday of every month" (from message body)
+      m = pl.match(/\b(first|second|third|fourth|last) (monday|tuesday|wednesday|thursday|friday|saturday|sunday) of every month/);
+      if (m) return { type:'monthly-nth', dow:DAY_IDX[m[2]], nth:ORD[m[1]] };
+
       // "Monthly" standalone
       if (/^monthly$/i.test(p)) return { type:'monthly-dom', dow:null };
       // "Weekly" standalone
-      if (/^weekly$/i.test(p)) return { type:'weekly', dow:startDt.getDay() };
+      if (/^weekly$/i.test(p)) return { type:'weekly', dow:startDt.getDay(), interval:1 };
     }
+
     // Free text fallbacks
-    if (/every (other|2) week|bi.?weekly|biweekly/i.test(al)) return { type:'biweekly', dow:startDt.getDay() };
-    if (/every week|\bweekly\b/i.test(al) && !/bi.?weekly/i.test(al)) return { type:'weekly', dow:startDt.getDay() };
+    if (/every (other|2) week|bi.?weekly|biweekly/i.test(al)) return { type:'biweekly', dow:startDt.getDay(), interval:2 };
+    if (/every week|\bweekly\b/i.test(al) && !/bi.?weekly/i.test(al)) return { type:'weekly', dow:startDt.getDay(), interval:1 };
     if (/every month|\bmonthly\b/i.test(al)) return { type:'monthly-dom', dow:null };
     return null;
   }
@@ -813,14 +833,13 @@ function parseOutlookRows(rows) {
     if (!from || !to) return dates;
     const eff = startDt > from ? new Date(startDt) : new Date(from);
 
-    if (rec.type === 'weekly' || rec.type === 'biweekly') {
-      const interval = rec.type === 'biweekly' ? 14 : 7;
+    if (rec.type === 'weekly' || rec.type === 'biweekly' || rec.type === 'nweekly') {
+      const intervalDays = (rec.interval || (rec.type === 'biweekly' ? 2 : 1)) * 7;
+      const targetDow = (rec.dow !== null && rec.dow !== undefined) ? rec.dow : startDt.getDay();
       let d = new Date(startDt); d.setHours(h, mn, 0, 0);
-      // Align to correct DOW
-      while (d.getDay() !== rec.dow) d = new Date(d.getTime() + 86400000);
-      // Advance by intervals to reach eff
-      while (d < eff) d = new Date(d.getTime() + interval*86400000);
-      while (d <= to) { dates.push(new Date(d)); d = new Date(d.getTime() + interval*86400000); }
+      while (d.getDay() !== targetDow) d = new Date(d.getTime() + 86400000);
+      while (d < eff) d = new Date(d.getTime() + intervalDays*86400000);
+      while (d <= to) { dates.push(new Date(d)); d = new Date(d.getTime() + intervalDays*86400000); }
 
     } else if (rec.type === 'monthly-dom') {
       let d = new Date(startDt); d.setHours(h, mn, 0, 0);
@@ -845,6 +864,9 @@ function parseOutlookRows(rows) {
   blocks.forEach(block => {
     const subject = block.subject;
     if (!subject || /^canceled:/i.test(subject)) return;
+    // Also check Meeting Status column and message for cancellation signals
+    if (/cancel/i.test(block.meetingStatus || '')) return;
+    if (/^cancell?ing series|^cancell?ed/i.test((block.message || '').trim())) return;
 
     const startDt = parseOLDate(block.startStr);
     const endDt   = parseOLDate(block.endStr);
